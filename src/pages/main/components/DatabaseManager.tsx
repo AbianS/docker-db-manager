@@ -1,6 +1,8 @@
 import {
   Activity,
   Database,
+  Download,
+  Loader2,
   Play,
   Plus,
   Search,
@@ -16,6 +18,7 @@ import { Input } from '../../../shared/components/ui/input';
 import { Container } from '../../../shared/types/container';
 import type { ContainerStats } from '../hooks/use-container-stats';
 import logoImage from '../../../../public/logo.avif';
+import { useAppUpdater } from '@/features/app/hooks/use-app-updater';
 
 interface DatabaseManagerProps {
   containers: Container[];
@@ -49,6 +52,7 @@ export function DatabaseManager({
   disabled = false,
 }: DatabaseManagerProps) {
   const { version } = useAppVersion();
+  const { checking, downloading, checkForUpdates } = useAppUpdater();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -134,6 +138,23 @@ export function DatabaseManager({
           >
             <Plus className="w-4 h-4" />
             New Database
+          </Button>
+          <Button
+            className="w-full justify-start gap-2"
+            variant="outline"
+            onClick={checkForUpdates}
+            disabled={disabled || checking || downloading}
+          >
+            {checking || downloading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            {checking
+              ? 'Checking...'
+              : downloading
+                ? 'Downloading...'
+                : 'Check for Updates'}
           </Button>
         </div>
 

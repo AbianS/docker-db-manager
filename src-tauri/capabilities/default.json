@@ -27,6 +27,10 @@
     "core:window:default",
     "core:window:allow-start-dragging",
     "core:window:allow-close",
-    "clipboard-manager:allow-write-text"
+    "clipboard-manager:allow-write-text",
+    "updater:default",
+    "updater:allow-check",
+    "updater:allow-download",
+    "updater:allow-install"
   ]
 }
