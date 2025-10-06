@@ -33,7 +33,7 @@
 Docker DB Manager is a desktop application that simplifies Docker database container management. No complex commands, no terminal, just an intuitive interface to create and manage your development databases.
 
 <div align="center">
-  <img src="assets/app.png" alt="Docker DB Manager Interface" width="800" />
+  <img src="assets/recorder.gif" alt="Docker DB Manager Interface" width="800" />
 </div>
 
 ## 🎯 Features
