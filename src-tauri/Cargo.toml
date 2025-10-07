@@ -29,12 +29,11 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1.0.145"
 uuid = { version = "1.18.1", features = ["v4"] }
 chrono = { version = "0.4.42", features = ["serde"] }
-tauri-plugin-clipboard-manager = "2"
+tauri-plugin-clipboard-manager = "2.3.0"
 
 [dev-dependencies]
-tokio-test = "0.4"
-tokio = { version = "1.0", features = ["full"] }
-tempfile = "3.0"
+tokio-test = "0.4.4"
+tokio = { version = "1.47.1", features = ["full"] }
 
 [profile.dev]
 incremental = true # Compile your binary in smaller steps.
@@ -47,4 +46,4 @@ panic = "abort" # Higher performance by disabling panic handlers.
 strip = true # Ensures debug symbols are removed.
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-updater = "2"
+tauri-plugin-updater = "2.9.0"
