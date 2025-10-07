@@ -65,7 +65,7 @@
     "zod": "4.1.12"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "@biomejs/biome": "2.2.5",
     "@tauri-apps/cli": "2.8.4",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.0",
