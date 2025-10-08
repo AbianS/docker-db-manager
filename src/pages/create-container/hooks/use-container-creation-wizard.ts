@@ -2,7 +2,7 @@ import { emit } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { genericContainersApi } from '@/features/containers/api/generic-containers.api';
+import { databasesApi } from '@/features/databases/api/databases.api';
 import { databaseRegistry } from '@/features/databases/registry/database-registry';
 import type { DockerRunRequest } from '@/features/databases/types/docker.types';
 import { FORM_STEPS } from '../types/form-steps';
@@ -236,10 +236,9 @@ export function useContainerCreationWizard() {
 
         const dockerRequest = transformFormToDockerRequest(data);
 
-        // Use the new generic API
+        // Use the unified databases API
         console.log('🚀 Creating container with Docker args:', dockerRequest);
-        const newContainer =
-          await genericContainersApi.createFromDockerArgs(dockerRequest);
+        const newContainer = await databasesApi.create(dockerRequest);
 
         // Mark all steps as completed
         setCompletedSteps([1, 2, 3]);

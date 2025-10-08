@@ -1,24 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { handleContainerError } from '../../../core/errors/error-handler';
-import type { Container } from '../../../shared/types/container';
-import { containersApi } from '../api/containers.api';
+import { handleContainerError } from '@/core/errors/error-handler';
+import type { Container } from '@/shared/types/container';
+import { databasesApi } from '../api/databases.api';
 
 /**
- * Hook to manage the list of containers
+ * Hook to manage the list of database containers
  * Responsibility: State and periodic synchronization
  */
-export function useContainerList() {
+export function useDatabaseList() {
   const [containers, setContainers] = useState<Container[]>([]);
   const [loading, setLoading] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
-   * Load the complete list of containers
+   * Load the complete list of database containers
    */
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await containersApi.getAll();
+      const data = await databasesApi.getAll();
       setContainers(data);
     } catch (error) {
       handleContainerError(error);
@@ -28,11 +28,11 @@ export function useContainerList() {
   }, []);
 
   /**
-   * Synchronize containers with Docker
+   * Synchronize database containers with Docker
    */
   const sync = useCallback(async () => {
     try {
-      const data = await containersApi.sync();
+      const data = await databasesApi.sync();
       setContainers(data);
     } catch (error) {
       console.error('Error syncing containers:', error);

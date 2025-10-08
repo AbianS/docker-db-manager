@@ -2,8 +2,7 @@ import { emit } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { containersApi } from '@/features/containers/api/containers.api';
-import { genericContainersApi } from '@/features/containers/api/generic-containers.api';
+import { databasesApi } from '@/features/databases/api/databases.api';
 import { databaseRegistry } from '@/features/databases/registry/database-registry';
 import type { DockerRunRequest } from '@/features/databases/types/docker.types';
 import type { Container } from '@/shared/types/container';
@@ -41,7 +40,7 @@ export function useDatabaseEditWizard(containerId: string) {
   const loadContainer = useCallback(async () => {
     setLoading(true);
     try {
-      const loadedContainer = await containersApi.getById(containerId);
+      const loadedContainer = await databasesApi.getById(containerId);
       setContainer(loadedContainer);
 
       // Get the provider for this database type
@@ -173,13 +172,12 @@ export function useDatabaseEditWizard(containerId: string) {
 
         const dockerRequest = transformFormToDockerRequest(data, container);
 
-        // Use the new generic UPDATE API
+        // Use the new unified databases API
         console.log('🔄 Updating container with Docker args:', dockerRequest);
-        const updatedContainer =
-          await genericContainersApi.updateFromDockerArgs(
-            container.id,
-            dockerRequest,
-          );
+        const updatedContainer = await databasesApi.update(
+          container.id,
+          dockerRequest,
+        );
 
         // Emit event to notify main window
         try {

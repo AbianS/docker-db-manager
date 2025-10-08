@@ -1,23 +1,20 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
-import { handleContainerError } from '../../../core/errors/error-handler';
-import type { Container } from '../../../shared/types/container';
-import { containersApi } from '../api/containers.api';
+import { handleContainerError } from '@/core/errors/error-handler';
+import type { Container } from '@/shared/types/container';
+import { databasesApi } from '../api/databases.api';
 
 /**
- * Hook for container actions (start, stop, remove, getById)
+ * Hook for database actions (start, stop, remove, getById)
  * Responsibility: Individual operations without global state management
- * Note: Create/Update are now handled by the new generic API with providers
  */
-export function useContainerActions() {
-  // REMOVED: update() - Now using genericContainersApi.updateFromDockerArgs() with providers
-
+export function useDatabaseActions() {
   /**
-   * Start a container
+   * Start a database container
    */
   const start = useCallback(async (containerId: string): Promise<void> => {
     try {
-      await containersApi.start(containerId);
+      await databasesApi.start(containerId);
       toast.success('Database started');
     } catch (error) {
       handleContainerError(error);
@@ -25,11 +22,11 @@ export function useContainerActions() {
   }, []);
 
   /**
-   * Stop a container
+   * Stop a database container
    */
   const stop = useCallback(async (containerId: string): Promise<void> => {
     try {
-      await containersApi.stop(containerId);
+      await databasesApi.stop(containerId);
       toast.success('Database stopped');
     } catch (error) {
       handleContainerError(error);
@@ -37,11 +34,11 @@ export function useContainerActions() {
   }, []);
 
   /**
-   * Remove a container
+   * Remove a database container
    */
   const remove = useCallback(async (containerId: string): Promise<void> => {
     try {
-      await containersApi.remove(containerId);
+      await databasesApi.remove(containerId);
       toast.success('Database removed');
     } catch (error) {
       handleContainerError(error);
@@ -49,12 +46,12 @@ export function useContainerActions() {
   }, []);
 
   /**
-   * Get a container by ID
+   * Get a database container by ID
    */
   const getById = useCallback(
     async (containerId: string): Promise<Container> => {
       try {
-        return await containersApi.getById(containerId);
+        return await databasesApi.getById(containerId);
       } catch (error) {
         handleContainerError(error);
       }
