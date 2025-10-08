@@ -1,7 +1,23 @@
 import { invoke } from '@/core/tauri/invoke';
 import type { Container } from '@/shared/types/container';
-import { containerFromJSON } from '@/shared/utils/container';
 import type { DockerRunRequest } from '../types/docker.types';
+
+const containerFromJSON = (data: any): Container => ({
+  id: data.id,
+  name: data.name,
+  dbType: data.db_type,
+  version: data.version,
+  status: data.status,
+  port: data.port,
+  createdAt: new Date(data.created_at),
+  maxConnections: data.max_connections,
+  containerId: data.container_id,
+  username: data.stored_username,
+  password: data.stored_password,
+  databaseName: data.stored_database_name,
+  persistData: data.stored_persist_data,
+  enableAuth: data.stored_enable_auth,
+});
 
 /**
  * Unified Databases API

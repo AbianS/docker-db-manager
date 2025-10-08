@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { DockerStatus } from '../../../shared/types/docker';
-import { canInteractWithDocker } from '../../../shared/utils/docker';
 import { dockerApi } from '../api/docker.api';
 
 /**
@@ -26,8 +25,7 @@ export function useDockerStatus() {
 
       setDockerStatus(status);
 
-      // Show overlay if Docker is not available
-      if (!canInteractWithDocker(status)) {
+      if (status.status !== 'running') {
         setShouldShowOverlay(true);
       } else {
         setShouldShowOverlay(false);
@@ -118,8 +116,6 @@ export function useDockerStatus() {
     isRefreshing,
     shouldShowOverlay,
     refreshStatus,
-    isDockerAvailable: dockerStatus
-      ? canInteractWithDocker(dockerStatus)
-      : false,
+    isDockerAvailable: dockerStatus ? dockerStatus.status === 'running' : false,
   };
 }
