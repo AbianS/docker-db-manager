@@ -3,9 +3,9 @@ import { emit } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { databaseRegistry } from '@/features/databases/registry/database-registry';
+import type { DockerRunRequest } from '@/features/databases/types/docker.types';
 import { useContainerActions } from '../../../features/containers/hooks/use-container-actions';
-import { ContainerService } from '../../../features/containers/services/container.service';
-import type { CreateContainerRequest } from '../../../shared/types/container';
 import {
   type CreateDatabaseFormValidation,
   createDatabaseFormSchema,
@@ -110,42 +110,41 @@ export function useContainerCreationWizard() {
   }, [currentStep, watch]);
 
   /**
-   * Transform form data to API format
+   * Transform form data to Docker Run Request using provider
    */
-  const transformFormToRequest = useCallback(
-    (data: CreateDatabaseFormValidation): CreateContainerRequest => {
+  const transformFormToDockerRequest = useCallback(
+    (data: CreateDatabaseFormValidation): DockerRunRequest => {
       const { databaseSelection, containerConfiguration } = data;
+
+      // Get the provider for this database type
+      const provider = databaseRegistry.get(databaseSelection.dbType);
+      if (!provider) {
+        throw new Error(
+          `No provider found for database type: ${databaseSelection.dbType}`,
+        );
+      }
+
+      // Let the provider build the Docker arguments
+      const dockerArgs = provider.buildDockerArgs(containerConfiguration);
+
+      // Generate unique ID for this container
+      const containerId = crypto.randomUUID();
 
       return {
         name: containerConfiguration.name,
-        dbType: databaseSelection.dbType,
-        version: containerConfiguration.version,
-        port: containerConfiguration.port!,
-        username: containerConfiguration.username,
-        password: containerConfiguration.password || '',
-        databaseName: containerConfiguration.databaseName,
-        persistData: containerConfiguration.persistData ?? true,
-        enableAuth: containerConfiguration.enableAuth ?? true,
-        maxConnections:
-          containerConfiguration.maxConnections ||
-          ContainerService.getDefaultPort(databaseSelection.dbType),
-        // Include DB-specific settings if they exist
-        ...(databaseSelection.dbType === 'PostgreSQL' &&
-          containerConfiguration.postgresSettings && {
-            postgresSettings: containerConfiguration.postgresSettings,
-          }),
-        ...(databaseSelection.dbType === 'MySQL' &&
-          containerConfiguration.mysqlSettings && {
-            mysqlSettings: containerConfiguration.mysqlSettings,
-          }),
-        ...(databaseSelection.dbType === 'Redis' &&
-          containerConfiguration.redisSettings && {
-            redisSettings: containerConfiguration.redisSettings,
-          }),
-        ...(databaseSelection.dbType === 'MongoDB' &&
-          containerConfiguration.mongoSettings && {
-            mongoSettings: containerConfiguration.mongoSettings,
-          }),
+        dockerArgs,
+        metadata: {
+          id: containerId,
+          dbType: databaseSelection.dbType,
+          version: containerConfiguration.version,
+          port: containerConfiguration.port!,
+          username: containerConfiguration.username,
+          password: containerConfiguration.password || '',
+          databaseName: containerConfiguration.databaseName,
+          persistData: containerConfiguration.persistData ?? true,
+          enableAuth: containerConfiguration.enableAuth ?? true,
+          maxConnections: containerConfiguration.maxConnections,
+        },
       };
     },
     [],
@@ -157,8 +156,24 @@ export function useContainerCreationWizard() {
   const submit = useCallback(
     async (data: CreateDatabaseFormValidation) => {
       try {
-        const request = transformFormToRequest(data);
-        const newContainer = await create(request);
+        const dockerRequest = transformFormToDockerRequest(data);
+
+        // TODO: Call new backend command with dockerRequest
+        // For now, convert to old format to not break everything
+        const legacyRequest = {
+          name: dockerRequest.name,
+          dbType: dockerRequest.metadata.dbType,
+          version: dockerRequest.metadata.version,
+          port: dockerRequest.metadata.port,
+          username: dockerRequest.metadata.username,
+          password: dockerRequest.metadata.password,
+          databaseName: dockerRequest.metadata.databaseName,
+          persistData: dockerRequest.metadata.persistData,
+          enableAuth: dockerRequest.metadata.enableAuth,
+          maxConnections: dockerRequest.metadata.maxConnections,
+        };
+
+        const newContainer = await create(legacyRequest as any);
 
         // Mark all steps as completed
         setCompletedSteps([1, 2, 3]);
@@ -178,7 +193,7 @@ export function useContainerCreationWizard() {
         console.error('Error creating container:', error);
       }
     },
-    [create, transformFormToRequest],
+    [create, transformFormToDockerRequest],
   );
 
   return {
