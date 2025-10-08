@@ -18,9 +18,3 @@ databaseRegistry.register(new MongoDBDatabaseProvider());
 console.log(
   `🗄️  Database Registry initialized with ${databaseRegistry.count()} providers`,
 );
-
-export * from './mongodb.provider';
-export * from './mysql.provider';
-// Re-export for convenience
-export * from './postgres.provider';
-export * from './redis.provider';
