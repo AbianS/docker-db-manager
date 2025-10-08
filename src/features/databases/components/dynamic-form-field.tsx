@@ -28,7 +28,20 @@ export function DynamicFormField({ form, field, fieldPrefix = '' }: Props) {
   } = form;
 
   const fullFieldName = fieldPrefix + field.name;
-  const error = errors[fullFieldName];
+
+  // Access nested error correctly
+  // For "containerConfiguration.password", split and access nested
+  const getNestedError = (errors: any, path: string) => {
+    const parts = path.split('.');
+    let current = errors;
+    for (const part of parts) {
+      if (!current) return undefined;
+      current = current[part];
+    }
+    return current;
+  };
+
+  const error = getNestedError(errors, fullFieldName);
 
   return (
     <div className="space-y-2">
@@ -45,26 +58,46 @@ export function DynamicFormField({ form, field, fieldPrefix = '' }: Props) {
         defaultValue={field.defaultValue}
         rules={{
           required: field.required ? `${field.label} is required` : undefined,
+          // For text/password fields: use minLength/maxLength
           minLength:
-            field.type !== 'checkbox' &&
-            field.type !== 'select' &&
-            field.validation?.min
+            field.type === 'text' || field.type === 'password'
+              ? field.validation?.min
+                ? {
+                    value: field.validation.min,
+                    message:
+                      field.validation.message ||
+                      `Minimum length is ${field.validation.min}`,
+                  }
+                : undefined
+              : undefined,
+          maxLength:
+            field.type === 'text' || field.type === 'password'
+              ? field.validation?.max
+                ? {
+                    value: field.validation.max,
+                    message:
+                      field.validation.message ||
+                      `Maximum length is ${field.validation.max}`,
+                  }
+                : undefined
+              : undefined,
+          // For number fields: use min/max (value validation)
+          min:
+            field.type === 'number' && field.validation?.min
               ? {
                   value: field.validation.min,
                   message:
                     field.validation.message ||
-                    `Minimum length is ${field.validation.min}`,
+                    `Minimum value is ${field.validation.min}`,
                 }
               : undefined,
-          maxLength:
-            field.type !== 'checkbox' &&
-            field.type !== 'select' &&
-            field.validation?.max
+          max:
+            field.type === 'number' && field.validation?.max
               ? {
                   value: field.validation.max,
                   message:
                     field.validation.message ||
-                    `Maximum length is ${field.validation.max}`,
+                    `Maximum value is ${field.validation.max}`,
                 }
               : undefined,
         }}

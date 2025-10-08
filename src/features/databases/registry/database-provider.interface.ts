@@ -23,7 +23,7 @@ export interface DatabaseProvider {
 
   // ==================== Form Fields (Dynamic) ====================
   /**
-   * Get basic fields specific to this database (version, etc.)
+   * Get basic fields specific to this database (name, port, version, etc.)
    */
   getBasicFields(): FormField[];
 

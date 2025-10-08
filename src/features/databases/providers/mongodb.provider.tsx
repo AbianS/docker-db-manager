@@ -26,6 +26,32 @@ export class MongoDBDatabaseProvider implements DatabaseProvider {
   getBasicFields(): FormField[] {
     return [
       {
+        name: 'name',
+        label: 'Container Name',
+        type: 'text',
+        required: true,
+        placeholder: `my-${this.id.toLowerCase()}-db`,
+        validation: {
+          min: 3,
+          message: 'Container name must be at least 3 characters',
+        },
+        helpText: 'Unique name for this container',
+      },
+      {
+        name: 'port',
+        label: 'Port',
+        type: 'number',
+        defaultValue: this.defaultPort,
+        required: true,
+        placeholder: this.defaultPort.toString(),
+        validation: {
+          min: 1024,
+          max: 65535,
+          message: 'Port must be between 1024 and 65535',
+        },
+        helpText: `Host port to map to container port ${this.containerPort}`,
+      },
+      {
         name: 'version',
         label: 'MongoDB Version',
         type: 'select',

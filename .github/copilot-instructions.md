@@ -49,10 +49,13 @@ Providers implement:
 
 ### Form Validation
 Multi-step wizard uses `react-hook-form` (no Zod):
-- Provider-based validation via `provider.validateConfig()`
-- Step validation via `isCurrentStepValid` in wizard hook
+- **Two-layer validation**:
+  1. Field-level validation via `react-hook-form` rules (required, min, max, etc.)
+  2. Provider validation via `provider.validateConfig()` for database-specific rules
+- Step validation via `isCurrentStepValid` checks both form errors and provider validation
+- `nextStep()` triggers `form.trigger()` to validate all fields before advancing
 - Form state persists across steps (single form instance)
-- Dynamic form fields generated from provider configuration
+- Dynamic form fields generated from provider configuration with validation rules
 
 ## Development Commands
 

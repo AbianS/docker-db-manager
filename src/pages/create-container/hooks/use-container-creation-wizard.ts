@@ -95,18 +95,40 @@ export function useContainerCreationWizard() {
   }, [selectedDbType, setValue]);
 
   /**
-   * Advance to next step - No Zod validation, just check if required fields exist
+   * Advance to next step - Uses react-hook-form validation and provider validation
    */
-  const nextStep = useCallback(() => {
+  const nextStep = useCallback(async () => {
     let canProceed = false;
 
     if (currentStep === 1) {
       // Step 1: Must have selected a database
       canProceed = Boolean(watch('databaseSelection.dbType'));
     } else if (currentStep === 2) {
-      // Step 2: Check basic required fields
+      // Step 2: Validate with react-hook-form (field-level validation)
+      // This triggers validation for all fields in the form
+      const isFormValid = await form.trigger('containerConfiguration');
+
+      if (!isFormValid) {
+        console.log('❌ Form validation failed');
+        return;
+      }
+
       const config = watch('containerConfiguration');
-      canProceed = !!(config.name && config.port && config.version);
+      const selectedDbType = watch('databaseSelection.dbType');
+
+      // Also validate with provider
+      if (selectedDbType) {
+        const provider = databaseRegistry.get(selectedDbType);
+        if (provider) {
+          const validation = provider.validateConfig(config);
+          if (!validation.valid) {
+            console.log('❌ Provider validation failed:', validation.errors);
+            return;
+          }
+        }
+      }
+
+      canProceed = true;
     } else {
       canProceed = true;
     }
@@ -119,7 +141,7 @@ export function useContainerCreationWizard() {
         setCurrentStep((prev) => prev + 1);
       }
     }
-  }, [currentStep, completedSteps, watch]);
+  }, [currentStep, completedSteps, watch, form]);
 
   /**
    * Go back to previous step
@@ -144,20 +166,21 @@ export function useContainerCreationWizard() {
 
   /**
    * Validate if current step is complete
+   * This is used to enable/disable the "Next" button
    */
   const isCurrentStepValid = useCallback(() => {
     switch (currentStep) {
       case 1:
         return Boolean(watch('databaseSelection.dbType'));
-      case 2:
-        const config = watch('containerConfiguration');
-        return !!(config.name && config.port && config.version);
+      case 2: {
+        return true;
+      }
       case 3:
         return true;
       default:
         return true;
     }
-  }, [currentStep, watch]);
+  }, [currentStep, watch, form.formState.errors]);
 
   /**
    * Transform form data to Docker Run Request using provider
