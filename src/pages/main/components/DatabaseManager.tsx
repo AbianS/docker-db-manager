@@ -11,14 +11,14 @@ import {
   Trash2,
   Zap,
 } from 'lucide-react';
+import { useAppUpdater } from '@/features/app/hooks/use-app-updater';
+import logoImage from '../../../../public/logo.avif';
 import { useAppVersion } from '../../../features/app/hooks/use-app-version';
 import { Badge } from '../../../shared/components/ui/badge';
 import { Button } from '../../../shared/components/ui/button';
 import { Input } from '../../../shared/components/ui/input';
 import { Container } from '../../../shared/types/container';
 import type { ContainerStats } from '../hooks/use-container-stats';
-import logoImage from '../../../../public/logo.avif';
-import { useAppUpdater } from '@/features/app/hooks/use-app-updater';
 
 interface DatabaseManagerProps {
   containers: Container[];

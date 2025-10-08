@@ -1,9 +1,9 @@
 import React, {
+  createContext,
+  useContext,
   useEffect,
   useRef,
   useState,
-  createContext,
-  useContext,
 } from 'react';
 
 interface SimpleDropdownProps {
