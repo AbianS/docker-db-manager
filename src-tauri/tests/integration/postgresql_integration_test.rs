@@ -1,6 +1,8 @@
 use docker_db_manager_lib::services::DockerService;
-use docker_db_manager_lib::types::CreateDatabaseRequest;
-use std::process::Command;
+use docker_db_manager_lib::types::{
+    ContainerMetadata, DockerRunArgs, DockerRunRequest, PortMapping, VolumeMount,
+};
+use std::collections::HashMap;
 
 mod utils;
 use utils::*;
@@ -23,33 +25,42 @@ async fn test_create_basic_postgresql_container() {
     // Initial cleanup
     clean_container(container_name).await;
 
-    // Arrange - Basic PostgreSQL configuration
+    // Arrange - Basic PostgreSQL configuration using DockerRunRequest
     let service = DockerService::new();
-    let request = CreateDatabaseRequest {
+
+    let mut env_vars = HashMap::new();
+    env_vars.insert("POSTGRES_PASSWORD".to_string(), "testpass123".to_string());
+    env_vars.insert("POSTGRES_USER".to_string(), "testuser".to_string());
+    env_vars.insert("POSTGRES_DB".to_string(), "testdb".to_string());
+
+    let request = DockerRunRequest {
         name: container_name.to_string(),
-        db_type: "PostgreSQL".to_string(),
-        version: "13-alpine".to_string(),
-        port: 5435,
-        persist_data: false,
-        username: Some("testuser".to_string()),
-        password: "testpass123".to_string(),
-        database_name: Some("testdb".to_string()),
-        enable_auth: true,
-        max_connections: Some(50),
-        postgres_settings: None,
-        mysql_settings: None,
-        redis_settings: None,
-        mongo_settings: None,
+        docker_args: DockerRunArgs {
+            image: "postgres:13-alpine".to_string(),
+            env_vars,
+            ports: vec![PortMapping {
+                host: 5435,
+                container: 5432,
+            }],
+            volumes: vec![],
+            command: vec![],
+        },
+        metadata: ContainerMetadata {
+            id: uuid::Uuid::new_v4().to_string(),
+            db_type: "PostgreSQL".to_string(),
+            version: "13-alpine".to_string(),
+            port: 5435,
+            username: Some("testuser".to_string()),
+            password: "testpass123".to_string(),
+            database_name: Some("testdb".to_string()),
+            persist_data: false,
+            enable_auth: true,
+            max_connections: Some(50),
+        },
     };
 
     // Act - Build and execute command
-    let command_result = service.build_docker_command(&request, &None);
-    assert!(
-        command_result.is_ok(),
-        "DockerService should build valid PostgreSQL command"
-    );
-
-    let command = command_result.unwrap();
+    let command = service.build_docker_command_from_args(&request.name, &request.docker_args);
     println!("🐳 PostgreSQL command generated: {:?}", command);
 
     // Verify PostgreSQL-specific elements
@@ -75,19 +86,17 @@ async fn test_create_basic_postgresql_container() {
     );
 
     // Execute Docker command
-    let output = Command::new("docker")
-        .args(&command)
-        .output()
-        .expect("Failed to execute PostgreSQL command");
+    let container_id = run_docker_command(command).await;
 
-    if !output.status.success() {
-        let error = String::from_utf8_lossy(&output.stderr);
+    if let Err(e) = container_id {
         clean_container(container_name).await;
-        panic!("Docker failed to create PostgreSQL container: {}", error);
+        panic!("Docker failed to create PostgreSQL container: {}", e);
     }
 
-    let container_id = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    println!("✅ PostgreSQL container created with ID: {}", container_id);
+    println!(
+        "✅ PostgreSQL container created with ID: {}",
+        container_id.unwrap()
+    );
 
     // Verify that the container exists and is running
     wait_for_container(3).await;
@@ -97,9 +106,10 @@ async fn test_create_basic_postgresql_container() {
         "PostgreSQL container should exist"
     );
 
-    // Verify status using utility
+    // Verify status
     if let Some(status) = get_container_status(container_name).await {
         println!("📊 PostgreSQL container status: {}", status);
+        assert!(status.contains("Up"), "Container should be running");
     }
 
     // Cleanup
@@ -127,31 +137,43 @@ async fn test_create_postgresql_container_with_volume() {
     clean_volume(&volume_name).await;
 
     let service = DockerService::new();
-    let request = CreateDatabaseRequest {
+
+    let mut env_vars = HashMap::new();
+    env_vars.insert("POSTGRES_PASSWORD".to_string(), "volpass123".to_string());
+    env_vars.insert("POSTGRES_USER".to_string(), "voluser".to_string());
+    env_vars.insert("POSTGRES_DB".to_string(), "voldb".to_string());
+
+    let request = DockerRunRequest {
         name: container_name.to_string(),
-        db_type: "PostgreSQL".to_string(),
-        version: "13-alpine".to_string(),
-        port: 5436,
-        persist_data: true, // With persistence
-        username: Some("voluser".to_string()),
-        password: "volpass123".to_string(),
-        database_name: Some("voldb".to_string()),
-        enable_auth: true,
-        max_connections: Some(100),
-        postgres_settings: None,
-        mysql_settings: None,
-        redis_settings: None,
-        mongo_settings: None,
+        docker_args: DockerRunArgs {
+            image: "postgres:13-alpine".to_string(),
+            env_vars,
+            ports: vec![PortMapping {
+                host: 5436,
+                container: 5432,
+            }],
+            volumes: vec![VolumeMount {
+                name: volume_name.clone(),
+                path: "/var/lib/postgresql/data".to_string(),
+            }],
+            command: vec![],
+        },
+        metadata: ContainerMetadata {
+            id: uuid::Uuid::new_v4().to_string(),
+            db_type: "PostgreSQL".to_string(),
+            version: "13-alpine".to_string(),
+            port: 5436,
+            username: Some("voluser".to_string()),
+            password: "volpass123".to_string(),
+            database_name: Some("voldb".to_string()),
+            persist_data: true,
+            enable_auth: true,
+            max_connections: Some(100),
+        },
     };
 
     // Build command with volume
-    let command_result = service.build_docker_command(&request, &Some(volume_name.clone()));
-    assert!(
-        command_result.is_ok(),
-        "Should build PostgreSQL command with volume"
-    );
-
-    let command = command_result.unwrap();
+    let command = service.build_docker_command_from_args(&request.name, &request.docker_args);
     println!("🐳 PostgreSQL command with volume: {:?}", command);
 
     // Verify that it includes the volume
@@ -164,36 +186,161 @@ async fn test_create_postgresql_container_with_volume() {
         "Should map PostgreSQL volume correctly"
     );
 
-    // Create volume using utility
+    // Create volume
     if let Err(e) = create_volume(&volume_name).await {
         println!("⚠️ Warning when creating volume: {}", e);
     }
 
     // Execute command
-    let output = Command::new("docker")
-        .args(&command)
-        .output()
-        .expect("Failed to execute PostgreSQL command with volume");
+    let container_id = run_docker_command(command).await;
 
-    if !output.status.success() {
-        let error = String::from_utf8_lossy(&output.stderr);
+    if let Err(e) = container_id {
         clean_container(container_name).await;
-        let _ = Command::new("docker")
-            .args(&["volume", "rm", &volume_name])
-            .output();
+        clean_volume(&volume_name).await;
         panic!(
             "Docker failed to create PostgreSQL container with volume: {}",
-            error
+            e
         );
     }
 
     println!("✅ PostgreSQL container with volume created successfully");
 
-    wait_for_container(2).await;
+    wait_for_container(3).await;
+
+    // Verify container and volume exist
+    assert!(
+        container_exists(container_name).await,
+        "Container should exist"
+    );
+    assert!(volume_exists(&volume_name).await, "Volume should exist");
 
     // Cleanup
     clean_container(container_name).await;
     clean_volume(&volume_name).await;
 
     println!("✅ PostgreSQL test with volume completed");
+}
+
+#[tokio::test]
+async fn test_update_postgresql_port() {
+    if !docker_available() {
+        println!("⚠️ Docker is not available, skipping PostgreSQL port update test");
+        return;
+    }
+
+    let container_name = "test-postgres-port-update";
+    let old_port = 5440;
+    let new_port = 5441;
+
+    // Initial cleanup
+    clean_container(container_name).await;
+
+    let service = DockerService::new();
+
+    // Create initial container
+    let mut env_vars = HashMap::new();
+    env_vars.insert("POSTGRES_PASSWORD".to_string(), "testpass".to_string());
+    env_vars.insert("POSTGRES_USER".to_string(), "testuser".to_string());
+    env_vars.insert("POSTGRES_DB".to_string(), "testdb".to_string());
+
+    let initial_request = DockerRunRequest {
+        name: container_name.to_string(),
+        docker_args: DockerRunArgs {
+            image: "postgres:13-alpine".to_string(),
+            env_vars: env_vars.clone(),
+            ports: vec![PortMapping {
+                host: old_port,
+                container: 5432,
+            }],
+            volumes: vec![],
+            command: vec![],
+        },
+        metadata: ContainerMetadata {
+            id: uuid::Uuid::new_v4().to_string(),
+            db_type: "PostgreSQL".to_string(),
+            version: "13-alpine".to_string(),
+            port: old_port,
+            username: Some("testuser".to_string()),
+            password: "testpass".to_string(),
+            database_name: Some("testdb".to_string()),
+            persist_data: false,
+            enable_auth: true,
+            max_connections: Some(100),
+        },
+    };
+
+    let command =
+        service.build_docker_command_from_args(&initial_request.name, &initial_request.docker_args);
+    let result = run_docker_command(command).await;
+
+    if let Err(e) = result {
+        clean_container(container_name).await;
+        panic!("Failed to create initial container: {}", e);
+    }
+
+    wait_for_container(2).await;
+
+    // Verify initial port
+    if let Some(ports) = get_container_port(container_name).await {
+        println!("📊 Initial ports: {}", ports);
+        assert!(
+            ports.contains(&old_port.to_string()),
+            "Should have old port mapping"
+        );
+    }
+
+    // Update: Remove old container and create with new port
+    clean_container(container_name).await;
+    wait_for_container(3).await; // Wait longer to ensure port is released
+
+    let updated_request = DockerRunRequest {
+        name: container_name.to_string(),
+        docker_args: DockerRunArgs {
+            image: "postgres:13-alpine".to_string(),
+            env_vars,
+            ports: vec![PortMapping {
+                host: new_port,
+                container: 5432,
+            }],
+            volumes: vec![],
+            command: vec![],
+        },
+        metadata: ContainerMetadata {
+            id: uuid::Uuid::new_v4().to_string(),
+            db_type: "PostgreSQL".to_string(),
+            version: "13-alpine".to_string(),
+            port: new_port,
+            username: Some("testuser".to_string()),
+            password: "testpass".to_string(),
+            database_name: Some("testdb".to_string()),
+            persist_data: false,
+            enable_auth: true,
+            max_connections: Some(100),
+        },
+    };
+
+    let new_command =
+        service.build_docker_command_from_args(&updated_request.name, &updated_request.docker_args);
+    let new_result = run_docker_command(new_command).await;
+
+    if let Err(e) = new_result {
+        clean_container(container_name).await;
+        panic!("Failed to create updated container: {}", e);
+    }
+
+    wait_for_container(2).await;
+
+    // Verify new port
+    if let Some(ports) = get_container_port(container_name).await {
+        println!("📊 Updated ports: {}", ports);
+        assert!(
+            ports.contains(&new_port.to_string()),
+            "Should have new port mapping"
+        );
+    }
+
+    // Cleanup
+    clean_container(container_name).await;
+
+    println!("✅ PostgreSQL port update test completed successfully");
 }
