@@ -1,18 +1,11 @@
 import { invoke } from '../../../core/tauri/invoke';
-import type {
-  Container,
-  CreateContainerRequest,
-  UpdateContainerRequest,
-} from '../../../shared/types/container';
-import {
-  containerFromJSON,
-  createRequestToTauri,
-  updateRequestToTauri,
-} from '../../../shared/utils/container';
+import type { Container } from '../../../shared/types/container';
+import { containerFromJSON } from '../../../shared/utils/container';
 
 /**
- * API Layer - All Tauri calls for containers
- * Pure layer without business logic, only data transformations
+ * Legacy Containers API Layer
+ * Keeps only basic operations (get, start, stop, remove)
+ * Create/Update now use genericContainersApi with provider-based system
  */
 export const containersApi = {
   /**
@@ -36,27 +29,8 @@ export const containersApi = {
     return container;
   },
 
-  /**
-   * Create a new container
-   */
-  async create(request: CreateContainerRequest): Promise<Container> {
-    const tauriRequest = createRequestToTauri(request);
-    const result = await invoke<unknown>('create_database_container', {
-      request: tauriRequest,
-    });
-    return containerFromJSON(result);
-  },
-
-  /**
-   * Update an existing container
-   */
-  async update(request: UpdateContainerRequest): Promise<Container> {
-    const tauriRequest = updateRequestToTauri(request);
-    const result = await invoke<unknown>('update_container_config', {
-      request: tauriRequest,
-    });
-    return containerFromJSON(result);
-  },
+  // REMOVED: create() - Now using genericContainersApi.createFromDockerArgs()
+  // REMOVED: update() - Now using genericContainersApi.updateFromDockerArgs()
 
   /**
    * Start a container

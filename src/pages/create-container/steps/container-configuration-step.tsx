@@ -5,8 +5,6 @@ import {
   DynamicFormSection,
 } from '@/features/databases/components/dynamic-form-section';
 import { useDatabaseProvider } from '@/features/databases/registry/database-registry';
-// Ensure providers are registered
-import '@/features/databases/providers';
 import {
   Accordion,
   AccordionContent,

@@ -1,53 +1,16 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { handleContainerError } from '../../../core/errors/error-handler';
-import type {
-  Container,
-  CreateContainerRequest,
-  UpdateContainerRequest,
-} from '../../../shared/types/container';
+import type { Container } from '../../../shared/types/container';
 import { containersApi } from '../api/containers.api';
 
 /**
- * Hook for container actions (CRUD)
+ * Hook for container actions (start, stop, remove, getById)
  * Responsibility: Individual operations without global state management
+ * Note: Create/Update are now handled by the new generic API with providers
  */
 export function useContainerActions() {
-  /**
-   * Create a new container
-   */
-  const create = useCallback(
-    async (request: CreateContainerRequest): Promise<Container> => {
-      try {
-        const container = await containersApi.create(request);
-        toast.success('Database created', {
-          description: `${container.name} has been created successfully`,
-        });
-        return container;
-      } catch (error) {
-        handleContainerError(error);
-      }
-    },
-    [],
-  );
-
-  /**
-   * Update an existing container
-   */
-  const update = useCallback(
-    async (request: UpdateContainerRequest): Promise<Container> => {
-      try {
-        const container = await containersApi.update(request);
-        toast.success('Database updated', {
-          description: `${container.name} has been updated`,
-        });
-        return container;
-      } catch (error) {
-        handleContainerError(error);
-      }
-    },
-    [],
-  );
+  // REMOVED: update() - Now using genericContainersApi.updateFromDockerArgs() with providers
 
   /**
    * Start a container
@@ -100,8 +63,6 @@ export function useContainerActions() {
   );
 
   return {
-    create,
-    update,
     start,
     stop,
     remove,

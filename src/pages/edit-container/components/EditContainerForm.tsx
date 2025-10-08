@@ -1,11 +1,32 @@
 import { Copy, Loader2, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { ContainerService } from '../../../features/containers/services/container.service';
-import { Badge } from '../../../shared/components/ui/badge';
-import { Button } from '../../../shared/components/ui/button';
-import { Input } from '../../../shared/components/ui/input';
-import { Label } from '../../../shared/components/ui/label';
-import { useContainerEdit } from '../hooks/use-container-edit';
+import {
+  DynamicFieldGroups,
+  DynamicFormSection,
+} from '@/features/databases/components/dynamic-form-section';
+import { databaseRegistry } from '@/features/databases/registry/database-registry';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/shared/components/ui/accordion';
+import { Badge } from '@/shared/components/ui/badge';
+import { Button } from '@/shared/components/ui/button';
+import { Checkbox } from '@/shared/components/ui/checkbox';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/shared/components/ui/form';
+import { Input } from '@/shared/components/ui/input';
+import { useDatabaseEditWizard } from '../hooks/use-database-edit-wizard';
+
+// Ensure providers are registered
+import '@/features/databases/providers';
 
 interface EditContainerFormProps {
   containerId: string;
@@ -17,18 +38,20 @@ interface EditContainerFormProps {
  */
 export function EditContainerForm({ containerId }: EditContainerFormProps) {
   const { container, loading, saving, form, save, cancel } =
-    useContainerEdit(containerId);
+    useDatabaseEditWizard(containerId);
 
   const {
-    register,
     handleSubmit,
-    formState: { errors, isDirty },
+    formState: { isDirty },
   } = form;
 
-  const handleCopyConnectionString = async () => {
-    if (!container) return;
+  // Get provider for dynamic fields
+  const provider = container ? databaseRegistry.get(container.dbType) : null;
 
-    const connectionString = ContainerService.getConnectionString(container);
+  const handleCopyConnectionString = async () => {
+    if (!container || !provider) return;
+
+    const connectionString = provider.getConnectionString(container);
 
     try {
       await navigator.clipboard.writeText(connectionString);
@@ -47,182 +70,227 @@ export function EditContainerForm({ containerId }: EditContainerFormProps) {
     );
   }
 
-  if (!container) {
+  if (!container || !provider) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">Database not found</p>
+        <p className="text-muted-foreground">
+          {!container ? 'Database not found' : 'Provider not found'}
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex-shrink-0 px-6 py-4 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">{container.name}</h1>
-            <div className="flex items-center gap-2 mt-2">
-              <Badge variant="outline">{container.dbType}</Badge>
-              <Badge
-                variant={
-                  container.status === 'running' ? 'default' : 'secondary'
-                }
-              >
-                {container.status}
-              </Badge>
+    <Form {...form}>
+      <div className="h-full flex flex-col">
+        {/* Header */}
+        <div className="flex-shrink-0 px-6 py-4 border-b border-border">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">{container.name}</h1>
+              <div className="flex items-center gap-2 mt-2">
+                <Badge variant="outline">{container.dbType}</Badge>
+                <Badge
+                  variant={
+                    container.status === 'running' ? 'default' : 'secondary'
+                  }
+                >
+                  {container.status}
+                </Badge>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Form Content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <form onSubmit={handleSubmit(save)} className="space-y-6 max-w-2xl">
-          {/* Container Info */}
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="name">Database Name</Label>
-              <Input
-                id="name"
-                {...register('name')}
-                disabled={saving}
-                className="mt-1"
-              />
-              {errors.name && (
-                <p className="text-sm text-destructive mt-1">
-                  {errors.name.message}
-                </p>
+        {/* Form Content - Same structure as create form but without wizard */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <form onSubmit={handleSubmit(save)} className="space-y-6 max-w-2xl">
+            <Accordion
+              type="multiple"
+              defaultValue={['container', 'auth', 'connection']}
+              className="w-full"
+            >
+              {/* Section 1: Basic Container Configuration */}
+              <AccordionItem value="container">
+                <AccordionTrigger className="text-sm font-medium">
+                  Basic Configuration
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Container Name */}
+                    <div className="col-span-2">
+                      <FormField
+                        control={form.control}
+                        name="containerConfiguration.name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Container Name *</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder={`my-${provider.id.toLowerCase()}-db`}
+                                disabled={saving}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {/* Port */}
+                    <div>
+                      <FormField
+                        control={form.control}
+                        name="containerConfiguration.port"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Port *</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder={provider.defaultPort.toString()}
+                                disabled={saving}
+                                {...field}
+                                onChange={(e) =>
+                                  field.onChange(Number(e.target.value))
+                                }
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {/* Dynamic Basic Fields from Provider */}
+                    <div className="col-span-2">
+                      <DynamicFormSection
+                        form={form}
+                        fields={provider.getBasicFields()}
+                        fieldPrefix="containerConfiguration."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Persistence Option */}
+                  <div className="pt-4 border-t">
+                    <FormField
+                      control={form.control}
+                      name="containerConfiguration.persistData"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel className="font-normal">
+                              Persist data with Docker volume
+                            </FormLabel>
+                            <p className="text-xs text-muted-foreground">
+                              Data will be preserved when container is removed
+                            </p>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Section 2: Authentication (Dynamic from Provider) */}
+              {provider.requiresAuth() && (
+                <AccordionItem value="auth">
+                  <AccordionTrigger className="text-sm font-medium">
+                    Authentication
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-4 pt-4">
+                    <DynamicFormSection
+                      form={form}
+                      fields={provider.getAuthenticationFields()}
+                      fieldPrefix="containerConfiguration."
+                    />
+                  </AccordionContent>
+                </AccordionItem>
               )}
-            </div>
 
-            <div>
-              <Label htmlFor="port">Port</Label>
-              <Input
-                id="port"
-                type="number"
-                {...register('port', { valueAsNumber: true })}
-                disabled={saving}
-                className="mt-1"
-              />
-              {errors.port && (
-                <p className="text-sm text-destructive mt-1">
-                  {errors.port.message}
-                </p>
+              {/* Section 3: Advanced Configuration (Dynamic from Provider) */}
+              {provider.getAdvancedFields().length > 0 && (
+                <AccordionItem value="advanced">
+                  <AccordionTrigger className="text-sm font-medium">
+                    Advanced Configuration
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-4 pt-4">
+                    <DynamicFieldGroups
+                      form={form}
+                      groups={provider.getAdvancedFields()}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
               )}
-            </div>
+
+              {/* Section 4: Connection String */}
+              <AccordionItem value="connection">
+                <AccordionTrigger className="text-sm font-medium">
+                  Connection String
+                </AccordionTrigger>
+                <AccordionContent className="space-y-2 pt-4">
+                  <div className="flex gap-2">
+                    <Input
+                      value={provider.getConnectionString(container)}
+                      readOnly
+                      className="font-mono text-sm"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={handleCopyConnectionString}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </form>
+        </div>
+
+        {/* Footer */}
+        <div className="flex-shrink-0 px-6 py-4 border-t border-border bg-background">
+          <div className="flex justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={cancel}
+              disabled={saving}
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSubmit(save)}
+              disabled={saving || !isDirty}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Changes
+                </>
+              )}
+            </Button>
           </div>
-
-          {/* Database Credentials */}
-          {container.dbType !== 'Redis' && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Database Credentials</h3>
-
-              <div>
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  {...register('username')}
-                  disabled={saving}
-                  className="mt-1"
-                />
-                {errors.username && (
-                  <p className="text-sm text-destructive mt-1">
-                    {errors.username.message}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="password">New Password (optional)</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  {...register('password')}
-                  disabled={saving}
-                  placeholder="Leave empty to keep current"
-                  className="mt-1"
-                />
-                {errors.password && (
-                  <p className="text-sm text-destructive mt-1">
-                    {errors.password.message}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">
-                  Will only be updated if you provide a new password
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="databaseName">Database Name</Label>
-                <Input
-                  id="databaseName"
-                  {...register('databaseName')}
-                  disabled={saving}
-                  className="mt-1"
-                />
-                {errors.databaseName && (
-                  <p className="text-sm text-destructive mt-1">
-                    {errors.databaseName.message}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Connection String */}
-          <div className="space-y-2">
-            <Label>Connection String</Label>
-            <div className="flex gap-2">
-              <Input
-                value={ContainerService.getConnectionString(container)}
-                readOnly
-                className="font-mono text-sm"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={handleCopyConnectionString}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </form>
-      </div>
-
-      {/* Footer */}
-      <div className="flex-shrink-0 px-6 py-4 border-t border-border bg-background">
-        <div className="flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={cancel}
-            disabled={saving}
-          >
-            <X className="w-4 h-4 mr-2" />
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSubmit(save)}
-            disabled={saving || !isDirty}
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Save Changes
-              </>
-            )}
-          </Button>
         </div>
       </div>
-    </div>
+    </Form>
   );
 }

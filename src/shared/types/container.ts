@@ -1,27 +1,4 @@
-export interface ContainerSettings {
-  postgres?: {
-    initdb_args?: string;
-    host_auth_method: string;
-    shared_preload_libraries?: string;
-  };
-  mysql?: {
-    root_host: string;
-    character_set: string;
-    collation: string;
-    sql_mode: string;
-  };
-  redis?: {
-    max_memory: string;
-    max_memory_policy: string;
-    append_only: boolean;
-    require_pass: boolean;
-  };
-  mongo?: {
-    auth_source: string;
-    enable_sharding: boolean;
-    oplog_size: string;
-  };
-}
+// REMOVED: Legacy ContainerSettings (now using provider-based system)
 
 export type ContainerStatus =
   | 'running'
@@ -32,6 +9,10 @@ export type ContainerStatus =
 
 export type DatabaseType = 'PostgreSQL' | 'MySQL' | 'Redis' | 'MongoDB';
 
+/**
+ * Container/Database representation
+ * This is what gets stored and displayed
+ */
 export interface Container {
   id: string;
   name: string;
@@ -47,58 +28,10 @@ export interface Container {
   databaseName?: string;
   persistData: boolean;
   enableAuth: boolean;
-  settings?: ContainerSettings;
 }
 
-export interface CreateContainerRequest {
-  name: string;
-  dbType: DatabaseType;
-  version: string;
-  port: number;
-  username?: string;
-  password: string;
-  databaseName?: string;
-  persistData: boolean;
-  enableAuth: boolean;
-  maxConnections?: number;
-  // Database-specific settings
-  postgresSettings?: {
-    initdbArgs?: string;
-    hostAuthMethod?: string;
-    sharedPreloadLibraries?: string;
-  };
-  mysqlSettings?: {
-    rootHost?: string;
-    characterSet?: string;
-    collation?: string;
-    sqlMode?: string;
-  };
-  redisSettings?: {
-    maxMemory?: string;
-    maxMemoryPolicy?: string;
-    appendOnly?: boolean;
-    requirePass?: boolean;
-  };
-  mongoSettings?: {
-    authSource?: string;
-    enableSharding?: boolean;
-    oplogSize?: string;
-  };
-}
-
-export interface UpdateContainerRequest {
-  containerId: string;
-  name?: string;
-  port?: number;
-  username?: string;
-  password?: string;
-  databaseName?: string;
-  maxConnections?: number;
-  enableAuth?: boolean;
-  persistData?: boolean;
-  restartPolicy?: string;
-  autoStart?: boolean;
-}
+// REMOVED: Legacy CreateContainerRequest and UpdateContainerRequest
+// Now using DockerRunRequest from features/databases/types/docker.types.ts with provider-based system
 
 export interface ContainerError {
   error_type: string;
