@@ -136,6 +136,7 @@ export function DynamicFormField({ form, field, fieldPrefix = '' }: Props) {
               <Select
                 value={controllerField.value}
                 onValueChange={controllerField.onChange}
+                disabled={field.readonly}
               >
                 <SelectTrigger
                   id={fullFieldName}

@@ -118,7 +118,9 @@ export function EditContainerForm({ containerId }: EditContainerFormProps) {
                   {/* Dynamic Basic Fields from Provider (includes name, port, version, etc.) */}
                   <DynamicFormSection
                     form={form}
-                    fields={provider.getBasicFields()}
+                    fields={provider.getBasicFields({
+                      isEditMode: true,
+                    })}
                     fieldPrefix="containerConfiguration."
                   />
 

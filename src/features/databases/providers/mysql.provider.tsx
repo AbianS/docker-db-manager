@@ -1,6 +1,9 @@
 import { SiMysql } from 'react-icons/si';
 import type { Container } from '@/shared/types/container';
-import type { DatabaseProvider } from '../registry/database-provider.interface';
+import type {
+  DatabaseProvider,
+  FieldsOptions,
+} from '../registry/database-provider.interface';
 import type { DockerRunArgs, ValidationResult } from '../types/docker.types';
 import type { FieldGroup, FormField } from '../types/form.types';
 
@@ -23,7 +26,7 @@ export class MySQLDatabaseProvider implements DatabaseProvider {
   readonly versions = ['8.4', '8.0', '5.7'];
 
   // ==================== Form Fields ====================
-  getBasicFields(): FormField[] {
+  getBasicFields({ isEditMode = false }: FieldsOptions): FormField[] {
     return [
       {
         name: 'name',
@@ -58,7 +61,10 @@ export class MySQLDatabaseProvider implements DatabaseProvider {
         options: this.versions,
         defaultValue: this.versions[0],
         required: true,
-        helpText: 'Select the MySQL version to install',
+        readonly: isEditMode,
+        helpText: isEditMode
+          ? 'Version cannot be changed after creation'
+          : 'Select the MySQL version to install',
       },
     ];
   }

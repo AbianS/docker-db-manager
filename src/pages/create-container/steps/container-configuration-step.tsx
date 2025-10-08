@@ -93,7 +93,7 @@ export function ContainerConfigurationStep({ form }: Props) {
                 {/* Dynamic Basic Fields from Provider (includes name, port, version, etc.) */}
                 <DynamicFormSection
                   form={form}
-                  fields={provider.getBasicFields()}
+                  fields={provider.getBasicFields({ isEditMode: false })}
                   fieldPrefix="containerConfiguration."
                 />
 

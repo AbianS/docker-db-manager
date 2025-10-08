@@ -3,6 +3,10 @@ import type { Container } from '@/shared/types/container';
 import type { DockerRunArgs, ValidationResult } from '../types/docker.types';
 import type { FieldGroup, FormField } from '../types/form.types';
 
+export interface FieldsOptions {
+  isEditMode?: boolean;
+}
+
 /**
  * Database Provider Interface
  * Each database type implements this interface to provide all necessary configuration
@@ -24,18 +28,21 @@ export interface DatabaseProvider {
   // ==================== Form Fields (Dynamic) ====================
   /**
    * Get basic fields specific to this database (name, port, version, etc.)
+   * @param options - Options for customizing field behavior
    */
-  getBasicFields(): FormField[];
+  getBasicFields(options?: FieldsOptions): FormField[];
 
   /**
    * Get authentication fields (username, password, database name)
+   * @param options - Options for customizing field behavior
    */
-  getAuthenticationFields(): FormField[];
+  getAuthenticationFields(options?: FieldsOptions): FormField[];
 
   /**
    * Get advanced configuration fields grouped by category
+   * @param options - Options for customizing field behavior
    */
-  getAdvancedFields(): FieldGroup[];
+  getAdvancedFields(options?: FieldsOptions): FieldGroup[];
 
   // ==================== Docker Command Building ====================
   /**

@@ -74,7 +74,7 @@ export function useContainerCreationWizard() {
 
     // Get all fields from provider and apply their default values
     const allFields = [
-      ...provider.getBasicFields(),
+      ...provider.getBasicFields({ isEditMode: false }),
       ...provider.getAuthenticationFields(),
       ...provider.getAdvancedFields().flatMap((group) => group.fields),
     ];

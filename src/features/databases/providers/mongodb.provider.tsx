@@ -1,6 +1,9 @@
 import { SiMongodb } from 'react-icons/si';
 import type { Container } from '@/shared/types/container';
-import type { DatabaseProvider } from '../registry/database-provider.interface';
+import type {
+  DatabaseProvider,
+  FieldsOptions,
+} from '../registry/database-provider.interface';
 import type { DockerRunArgs, ValidationResult } from '../types/docker.types';
 import type { FieldGroup, FormField } from '../types/form.types';
 
@@ -23,7 +26,7 @@ export class MongoDBDatabaseProvider implements DatabaseProvider {
   readonly versions = ['8.0', '7.0', '6.0', '5.0'];
 
   // ==================== Form Fields ====================
-  getBasicFields(): FormField[] {
+  getBasicFields({ isEditMode = false }: FieldsOptions): FormField[] {
     return [
       {
         name: 'name',
@@ -58,7 +61,10 @@ export class MongoDBDatabaseProvider implements DatabaseProvider {
         options: this.versions,
         defaultValue: this.versions[0],
         required: true,
-        helpText: 'Select the MongoDB version to install',
+        readonly: isEditMode,
+        helpText: isEditMode
+          ? 'Version cannot be changed after creation'
+          : 'Select the MongoDB version to install',
       },
     ];
   }
