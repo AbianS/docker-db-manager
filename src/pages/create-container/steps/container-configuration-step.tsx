@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import {
   DynamicFieldGroups,
@@ -23,10 +22,10 @@ import {
   FormMessage,
 } from '../../../shared/components/ui/form';
 import { Input } from '../../../shared/components/ui/input';
-import { CreateDatabaseFormValidation } from '../schemas/database-form.schema';
+import type { CreateDatabaseFormData } from '../hooks/use-container-creation-wizard';
 
 interface Props {
-  form: UseFormReturn<CreateDatabaseFormValidation>;
+  form: UseFormReturn<CreateDatabaseFormData>;
   isSubmitting: boolean;
 }
 
@@ -59,38 +58,8 @@ export function ContainerConfigurationStep({ form, isSubmitting }: Props) {
   const selectedDbType = form.watch('databaseSelection.dbType');
   const provider = useDatabaseProvider(selectedDbType);
 
-  // Set default values when database type changes
-  React.useEffect(() => {
-    if (provider) {
-      // Set default port
-      const currentPort = form.getValues('containerConfiguration.port');
-      if (!currentPort) {
-        form.setValue('containerConfiguration.port', provider.defaultPort);
-      }
-
-      // Set default version (first in the list)
-      const currentVersion = form.getValues('containerConfiguration.version');
-      if (!currentVersion && provider.versions.length > 0) {
-        form.setValue('containerConfiguration.version', provider.versions[0]);
-      }
-
-      // Set default authentication values
-      const authFields = provider.getAuthenticationFields();
-      authFields.forEach((field) => {
-        if (field.defaultValue !== undefined) {
-          const currentValue = form.getValues(
-            `containerConfiguration.${field.name}` as any,
-          );
-          if (currentValue === undefined || currentValue === '') {
-            form.setValue(
-              `containerConfiguration.${field.name}` as any,
-              field.defaultValue,
-            );
-          }
-        }
-      });
-    }
-  }, [selectedDbType, provider, form]);
+  // Note: Default values are now applied in use-container-creation-wizard.ts
+  // when the database type is selected
 
   if (!provider) {
     return (

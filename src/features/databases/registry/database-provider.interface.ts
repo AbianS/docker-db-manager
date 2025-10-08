@@ -57,7 +57,7 @@ export interface DatabaseProvider {
   /**
    * Get default username for this database (if any)
    */
-  getDefaultUsername?(): string;
+  getDefaultUsername?(): string | undefined;
 
   /**
    * Check if this database requires authentication

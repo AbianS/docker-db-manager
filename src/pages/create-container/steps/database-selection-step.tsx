@@ -4,10 +4,10 @@ import { useAllDatabaseProviders } from '@/features/databases/registry/database-
 // Import providers to ensure they're registered
 import '@/features/databases/providers';
 import { cn } from '../../../shared/utils/cn';
-import { CreateDatabaseFormValidation } from '../schemas/database-form.schema';
+import type { CreateDatabaseFormData } from '../hooks/use-container-creation-wizard';
 
 interface Props {
-  form: UseFormReturn<CreateDatabaseFormValidation>;
+  form: UseFormReturn<CreateDatabaseFormData>;
   isSubmitting: boolean;
 }
 

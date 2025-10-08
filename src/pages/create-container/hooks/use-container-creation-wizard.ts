@@ -1,16 +1,22 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import { emit } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { genericContainersApi } from '@/features/containers/api/generic-containers.api';
 import { databaseRegistry } from '@/features/databases/registry/database-registry';
 import type { DockerRunRequest } from '@/features/databases/types/docker.types';
-import {
-  type CreateDatabaseFormValidation,
-  createDatabaseFormSchema,
-} from '../schemas/database-form.schema';
 import { FORM_STEPS } from '../types/form-steps';
+
+/**
+ * Form data structure (no Zod schema needed)
+ * Validation is handled by providers and field-level rules
+ */
+export interface CreateDatabaseFormData {
+  databaseSelection: {
+    dbType?: string;
+  };
+  containerConfiguration: Record<string, any>;
+}
 
 /**
  * Hook to manage the container creation wizard
@@ -20,47 +26,92 @@ export function useContainerCreationWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 
-  // Form setup
-  const form = useForm<CreateDatabaseFormValidation>({
-    resolver: zodResolver(createDatabaseFormSchema),
+  // Form setup - NO ZOD RESOLVER
+  // Validation is handled by individual field rules from providers
+  const form = useForm<CreateDatabaseFormData>({
     defaultValues: {
       databaseSelection: {
         dbType: undefined,
       },
       containerConfiguration: {
         name: '',
-        port: 5432,
-        version: '',
-        username: '',
-        password: '',
-        databaseName: '',
+        port: undefined, // Will be set by provider
+        version: '', // Will be set by provider
         persistData: true,
         enableAuth: true,
-        maxConnections: undefined,
-        postgresSettings: {},
-        mysqlSettings: {},
-        redisSettings: {},
-        mongoSettings: {},
       },
     },
     mode: 'onChange',
   });
 
-  const { handleSubmit, trigger, watch } = form;
+  const { handleSubmit, watch, setValue } = form;
+
+  // Watch for database type changes to apply provider defaults
+  const selectedDbType = watch('databaseSelection.dbType');
 
   /**
-   * Advance to next step if validation is correct
+   * Apply provider defaults when database type changes
    */
-  const nextStep = useCallback(async () => {
-    let isValid = false;
+  useEffect(() => {
+    if (!selectedDbType) return;
 
-    if (currentStep === 1) {
-      isValid = await trigger('databaseSelection');
-    } else if (currentStep === 2) {
-      isValid = await trigger('containerConfiguration');
+    const provider = databaseRegistry.get(selectedDbType);
+    if (!provider) return;
+
+    // Apply default port
+    setValue('containerConfiguration.port', provider.defaultPort);
+
+    // Apply default version (first in the list)
+    if (provider.versions.length > 0) {
+      setValue('containerConfiguration.version', provider.versions[0]);
     }
 
-    if (isValid) {
+    // Apply default username if provider has one
+    const defaultUsername = provider.getDefaultUsername?.();
+    if (defaultUsername) {
+      setValue('containerConfiguration.username', defaultUsername);
+    }
+
+    // Get all fields from provider and apply their default values
+    const allFields = [
+      ...provider.getBasicFields(),
+      ...provider.getAuthenticationFields(),
+      ...provider.getAdvancedFields().flatMap((group) => group.fields),
+    ];
+
+    // Apply default values from fields
+    for (const field of allFields) {
+      if (field.defaultValue !== undefined) {
+        setValue(
+          `containerConfiguration.${field.name}` as any,
+          field.defaultValue,
+        );
+      }
+    }
+
+    console.log(
+      `✅ Applied defaults for ${provider.name}: port=${provider.defaultPort}, version=${provider.versions[0]}`,
+    );
+  }, [selectedDbType, setValue]);
+
+  /**
+   * Advance to next step - No Zod validation, just check if required fields exist
+   */
+  const nextStep = useCallback(() => {
+    let canProceed = false;
+
+    if (currentStep === 1) {
+      // Step 1: Must have selected a database
+      canProceed = Boolean(watch('databaseSelection.dbType'));
+    } else if (currentStep === 2) {
+      // Step 2: Check basic required fields
+      const config = watch('containerConfiguration');
+      canProceed = !!(config.name && config.port && config.version);
+    } else {
+      canProceed = true;
+    }
+
+    if (canProceed) {
       if (!completedSteps.includes(currentStep)) {
         setCompletedSteps((prev) => [...prev, currentStep]);
       }
@@ -68,7 +119,7 @@ export function useContainerCreationWizard() {
         setCurrentStep((prev) => prev + 1);
       }
     }
-  }, [currentStep, completedSteps, trigger]);
+  }, [currentStep, completedSteps, watch]);
 
   /**
    * Go back to previous step
@@ -112,8 +163,12 @@ export function useContainerCreationWizard() {
    * Transform form data to Docker Run Request using provider
    */
   const transformFormToDockerRequest = useCallback(
-    (data: CreateDatabaseFormValidation): DockerRunRequest => {
+    (data: CreateDatabaseFormData): DockerRunRequest => {
       const { databaseSelection, containerConfiguration } = data;
+
+      if (!databaseSelection.dbType) {
+        throw new Error('Database type not selected');
+      }
 
       // Get the provider for this database type
       const provider = databaseRegistry.get(databaseSelection.dbType);
@@ -153,8 +208,32 @@ export function useContainerCreationWizard() {
    * Final submit - create container and close window
    */
   const submit = useCallback(
-    async (data: CreateDatabaseFormValidation) => {
+    async (data: CreateDatabaseFormData) => {
       try {
+        const { databaseSelection, containerConfiguration } = data;
+
+        if (!databaseSelection.dbType) {
+          throw new Error('Database type not selected');
+        }
+
+        // Get the provider for validation
+        const provider = databaseRegistry.get(databaseSelection.dbType);
+        if (!provider) {
+          throw new Error(
+            `No provider found for database type: ${databaseSelection.dbType}`,
+          );
+        }
+
+        // Validate with provider before creating
+        const validation = provider.validateConfig(containerConfiguration);
+        if (!validation.valid) {
+          // Show validation errors
+          const errorMessage = validation.errors.join('\n');
+          console.error('❌ Validation errors:', validation.errors);
+          alert(`Validation failed:\n${errorMessage}`);
+          throw new Error(`Validation failed: ${errorMessage}`);
+        }
+
         const dockerRequest = transformFormToDockerRequest(data);
 
         // Use the new generic API
