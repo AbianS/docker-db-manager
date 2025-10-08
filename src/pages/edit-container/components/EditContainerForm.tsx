@@ -20,7 +20,6 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
 import { useDatabaseEditWizard } from '../hooks/use-database-edit-wizard';
@@ -116,62 +115,12 @@ export function EditContainerForm({ containerId }: EditContainerFormProps) {
                   Basic Configuration
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Container Name */}
-                    <div className="col-span-2">
-                      <FormField
-                        control={form.control}
-                        name="containerConfiguration.name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Container Name *</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder={`my-${provider.id.toLowerCase()}-db`}
-                                disabled={saving}
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* Port */}
-                    <div>
-                      <FormField
-                        control={form.control}
-                        name="containerConfiguration.port"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Port *</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                placeholder={provider.defaultPort.toString()}
-                                disabled={saving}
-                                {...field}
-                                onChange={(e) =>
-                                  field.onChange(Number(e.target.value))
-                                }
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* Dynamic Basic Fields from Provider */}
-                    <div className="col-span-2">
-                      <DynamicFormSection
-                        form={form}
-                        fields={provider.getBasicFields()}
-                        fieldPrefix="containerConfiguration."
-                      />
-                    </div>
-                  </div>
+                  {/* Dynamic Basic Fields from Provider (includes name, port, version, etc.) */}
+                  <DynamicFormSection
+                    form={form}
+                    fields={provider.getBasicFields()}
+                    fieldPrefix="containerConfiguration."
+                  />
 
                   {/* Persistence Option */}
                   <div className="pt-4 border-t">
