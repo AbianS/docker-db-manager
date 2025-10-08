@@ -15,7 +15,6 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .manage(DatabaseStore::default())
         .invoke_handler(tauri::generate_handler![
-            greet,
             get_app_version,
             create_container_from_docker_args,
             update_container_from_docker_args,

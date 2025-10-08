@@ -2,7 +2,7 @@ use crate::services::*;
 use crate::types::*;
 use tauri::{AppHandle, State};
 
-/// NEW: Create database container from generic Docker run request
+/// Create database container from generic Docker run request
 /// This command is database-agnostic and uses the docker args built by the frontend provider
 #[tauri::command]
 pub async fn create_container_from_docker_args(
@@ -134,7 +134,7 @@ pub async fn create_container_from_docker_args(
     Ok(database)
 }
 
-/// NEW: Update database container from generic Docker run request
+/// Update database container from generic Docker run request
 /// This command is database-agnostic and uses the docker args built by the frontend provider
 #[tauri::command]
 pub async fn update_container_from_docker_args(
@@ -327,9 +327,6 @@ pub async fn update_container_from_docker_args(
     Ok(container)
 }
 
-// REMOVED: Legacy create_database_container command
-// Now using create_container_from_docker_args with provider-based system
-
 #[tauri::command]
 pub async fn get_all_databases(
     app: AppHandle,
@@ -510,6 +507,3 @@ pub async fn remove_container(
 
     Ok(())
 }
-
-// REMOVED: Legacy update_container_config command
-// Now using update_container_from_docker_args with provider-based system

@@ -105,9 +105,6 @@ impl DockerService {
         args
     }
 
-    // REMOVED: Legacy build_docker_command, get_default_port, get_data_path
-    // Now using build_docker_command_from_args with provider-based system
-
     pub async fn check_docker_status(&self, app: &AppHandle) -> Result<serde_json::Value, String> {
         let shell = app.shell();
         let enriched_path = self.get_enriched_path(app).await;
