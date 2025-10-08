@@ -3,9 +3,9 @@ import { emit } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { genericContainersApi } from '@/features/containers/api/generic-containers.api';
 import { databaseRegistry } from '@/features/databases/registry/database-registry';
 import type { DockerRunRequest } from '@/features/databases/types/docker.types';
-import { useContainerActions } from '../../../features/containers/hooks/use-container-actions';
 import {
   type CreateDatabaseFormValidation,
   createDatabaseFormSchema,
@@ -19,7 +19,6 @@ import { FORM_STEPS } from '../types/form-steps';
 export function useContainerCreationWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-  const { create } = useContainerActions();
 
   // Form setup
   const form = useForm<CreateDatabaseFormValidation>({
@@ -158,22 +157,10 @@ export function useContainerCreationWizard() {
       try {
         const dockerRequest = transformFormToDockerRequest(data);
 
-        // TODO: Call new backend command with dockerRequest
-        // For now, convert to old format to not break everything
-        const legacyRequest = {
-          name: dockerRequest.name,
-          dbType: dockerRequest.metadata.dbType,
-          version: dockerRequest.metadata.version,
-          port: dockerRequest.metadata.port,
-          username: dockerRequest.metadata.username,
-          password: dockerRequest.metadata.password,
-          databaseName: dockerRequest.metadata.databaseName,
-          persistData: dockerRequest.metadata.persistData,
-          enableAuth: dockerRequest.metadata.enableAuth,
-          maxConnections: dockerRequest.metadata.maxConnections,
-        };
-
-        const newContainer = await create(legacyRequest as any);
+        // Use the new generic API
+        console.log('🚀 Creating container with Docker args:', dockerRequest);
+        const newContainer =
+          await genericContainersApi.createFromDockerArgs(dockerRequest);
 
         // Mark all steps as completed
         setCompletedSteps([1, 2, 3]);
@@ -189,13 +176,13 @@ export function useContainerCreationWizard() {
         const currentWindow = getCurrentWindow();
         await currentWindow.close();
       } catch (error) {
-        // Error is already handled in useContainerActions
+        // Error is already handled by invoke wrapper
         console.error('Error creating container:', error);
+        throw error;
       }
     },
-    [create, transformFormToDockerRequest],
+    [transformFormToDockerRequest],
   );
-
   return {
     // Form
     form,

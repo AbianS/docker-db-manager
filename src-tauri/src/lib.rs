@@ -18,6 +18,7 @@ pub fn run() {
             greet,
             get_app_version,
             create_database_container,
+            create_container_from_docker_args, // NEW: Generic container creation
             get_all_databases,
             start_container,
             stop_container,

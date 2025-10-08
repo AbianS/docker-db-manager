@@ -3,6 +3,140 @@ use crate::types::*;
 use tauri::{AppHandle, State};
 use uuid::Uuid;
 
+/// NEW: Create database container from generic Docker run request
+/// This command is database-agnostic and uses the docker args built by the frontend provider
+#[tauri::command]
+pub async fn create_container_from_docker_args(
+    request: DockerRunRequest,
+    app: AppHandle,
+    databases: State<'_, DatabaseStore>,
+) -> Result<DatabaseContainer, String> {
+    let docker_service = DockerService::new();
+    let storage_service = StorageService::new();
+
+    // Create volumes if needed
+    for volume in &request.docker_args.volumes {
+        docker_service
+            .create_volume_if_needed(&app, &volume.name)
+            .await?;
+    }
+
+    // Build Docker command from generic args
+    let docker_args =
+        docker_service.build_docker_command_from_args(&request.name, &request.docker_args);
+
+    // Execute Docker run command
+    let real_container_id = match docker_service.run_container(&app, &docker_args).await {
+        Ok(container_id) => container_id,
+        Err(error) => {
+            // Cleanup resources on error
+            let _ = docker_service
+                .force_remove_container_by_name(&app, &request.name)
+                .await;
+
+            // Cleanup volumes
+            for volume in &request.docker_args.volumes {
+                let _ = docker_service
+                    .remove_volume_if_exists(&app, &volume.name)
+                    .await;
+            }
+
+            // Check if it's a port already in use error
+            if error.contains("port is already allocated") || error.contains("Bind for") {
+                let port_error = CreateContainerError {
+                    error_type: "PORT_IN_USE".to_string(),
+                    message: format!("Port {} is already in use", request.metadata.port),
+                    port: Some(request.metadata.port),
+                    details: Some(
+                        "You can change the port in the configuration and try again.".to_string(),
+                    ),
+                };
+                return Err(serde_json::to_string(&port_error)
+                    .unwrap_or_else(|_| "Port in use error".to_string()));
+            }
+
+            // Check if it's a container name already exists error
+            if error.contains("name is already in use") || error.contains("already exists") {
+                let name_error = CreateContainerError {
+                    error_type: "NAME_IN_USE".to_string(),
+                    message: format!(
+                        "A container with the name '{}' already exists",
+                        request.name
+                    ),
+                    port: None,
+                    details: Some("Change the container name and try again.".to_string()),
+                };
+                return Err(serde_json::to_string(&name_error)
+                    .unwrap_or_else(|_| "Name in use error".to_string()));
+            }
+
+            // Generic Docker error
+            let generic_error = CreateContainerError {
+                error_type: "DOCKER_ERROR".to_string(),
+                message: "Error creating container".to_string(),
+                port: None,
+                details: Some(error.to_string()),
+            };
+            return Err(serde_json::to_string(&generic_error)
+                .unwrap_or_else(|_| format!("Docker command failed: {}", error)));
+        }
+    };
+
+    // Create database object using metadata
+    let database = DatabaseContainer {
+        id: request.metadata.id.clone(),
+        name: request.name.clone(),
+        db_type: request.metadata.db_type,
+        version: request.metadata.version,
+        status: "running".to_string(),
+        port: request.metadata.port,
+        created_at: chrono::Utc::now().format("%Y-%m-%d").to_string(),
+        max_connections: request.metadata.max_connections.unwrap_or(100),
+        container_id: Some(real_container_id.clone()),
+        stored_password: Some(request.metadata.password.clone()),
+        stored_username: request.metadata.username.clone(),
+        stored_database_name: request.metadata.database_name.clone(),
+        stored_persist_data: request.metadata.persist_data,
+        stored_enable_auth: request.metadata.enable_auth,
+    };
+
+    // Store in memory
+    databases
+        .lock()
+        .unwrap()
+        .insert(request.metadata.id.clone(), database.clone());
+
+    // Persist to store
+    let db_map = {
+        let map = databases.lock().unwrap();
+        map.clone()
+    };
+
+    // If saving to store fails, cleanup the created container
+    if let Err(store_error) = storage_service.save_databases_to_store(&app, &db_map).await {
+        // Remove from memory
+        databases.lock().unwrap().remove(&request.metadata.id);
+
+        // Cleanup Docker resources
+        let _ = docker_service
+            .remove_container(&app, &real_container_id)
+            .await;
+
+        // Cleanup volumes
+        for volume in &request.docker_args.volumes {
+            let _ = docker_service
+                .remove_volume_if_exists(&app, &volume.name)
+                .await;
+        }
+
+        return Err(format!("Error saving configuration: {}", store_error));
+    }
+
+    Ok(database)
+}
+
+/// LEGACY: Old create_database_container command
+/// TODO: Remove this once frontend migration is complete
 #[tauri::command]
 pub async fn create_database_container(
     request: CreateDatabaseRequest,

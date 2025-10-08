@@ -62,6 +62,51 @@ impl DockerService {
         std::env::var("PATH").unwrap_or_else(|_| String::new())
     }
 
+    /// Build Docker command from generic DockerRunArgs
+    /// This method is database-agnostic and doesn't need to know about specific database types
+    pub fn build_docker_command_from_args(
+        &self,
+        container_name: &str,
+        docker_args: &DockerRunArgs,
+    ) -> Vec<String> {
+        let mut args = vec![
+            "run".to_string(),
+            "-d".to_string(),
+            "--name".to_string(),
+            container_name.to_string(),
+        ];
+
+        // Add port mappings
+        for port in &docker_args.ports {
+            args.push("-p".to_string());
+            args.push(format!("{}:{}", port.host, port.container));
+        }
+
+        // Add volume mounts
+        for volume in &docker_args.volumes {
+            args.push("-v".to_string());
+            args.push(format!("{}:{}", volume.name, volume.path));
+        }
+
+        // Add environment variables
+        for (key, value) in &docker_args.env_vars {
+            args.push("-e".to_string());
+            args.push(format!("{}={}", key, value));
+        }
+
+        // Add image
+        args.push(docker_args.image.clone());
+
+        // Add additional command arguments (e.g., for Redis)
+        if !docker_args.command.is_empty() {
+            args.extend(docker_args.command.clone());
+        }
+
+        args
+    }
+
+    /// Legacy method - Build Docker command from CreateDatabaseRequest
+    /// TODO: Remove this once migration is complete
     pub fn build_docker_command(
         &self,
         request: &CreateDatabaseRequest,
