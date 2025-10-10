@@ -24,17 +24,10 @@ import {
 import { Input } from '@/shared/components/ui/input';
 import { useDatabaseEditWizard } from '../hooks/use-database-edit-wizard';
 
-// Ensure providers are registered
-import '@/features/databases/providers';
-
 interface EditContainerFormProps {
   containerId: string;
 }
 
-/**
- * Presentation component for editing container
- * Responsibility: Only rendering and UI events
- */
 export function EditContainerForm({ containerId }: EditContainerFormProps) {
   const { container, loading, saving, form, save, cancel } =
     useDatabaseEditWizard(containerId);
@@ -44,7 +37,6 @@ export function EditContainerForm({ containerId }: EditContainerFormProps) {
     formState: { isDirty },
   } = form;
 
-  // Get provider for dynamic fields
   const provider = container ? databaseRegistry.get(container.dbType) : null;
 
   const handleCopyConnectionString = async () => {

@@ -4,7 +4,7 @@ import {
   DynamicFieldGroups,
   DynamicFormSection,
 } from '@/features/databases/components/dynamic-form-section';
-import { useDatabaseProvider } from '@/features/databases/registry/database-registry';
+import { useDatabaseProvider } from '@/features/databases/hooks/use-registry';
 import {
   Accordion,
   AccordionContent,
@@ -52,9 +52,6 @@ const itemVariants = {
 export function ContainerConfigurationStep({ form }: Props) {
   const selectedDbType = form.watch('databaseSelection.dbType');
   const provider = useDatabaseProvider(selectedDbType);
-
-  // Note: Default values are now applied in use-container-creation-wizard.ts
-  // when the database type is selected
 
   if (!provider) {
     return (

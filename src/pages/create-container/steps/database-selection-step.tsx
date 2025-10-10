@@ -1,8 +1,6 @@
 import { motion } from 'framer-motion';
 import { Controller, UseFormReturn } from 'react-hook-form';
-import { useAllDatabaseProviders } from '@/features/databases/registry/database-registry';
-// Import providers to ensure they're registered
-import '@/features/databases/providers';
+import { useAllDatabaseProviders } from '@/features/databases/hooks/use-registry';
 import { cn } from '../../../shared/utils/cn';
 import type { CreateDatabaseFormData } from '../hooks/use-container-creation-wizard';
 
@@ -54,7 +52,6 @@ export function DatabaseSelectionStep({ form, isSubmitting }: Props) {
     control,
   } = form;
 
-  // Get all registered database providers
   const providers = useAllDatabaseProviders();
 
   return (

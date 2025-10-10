@@ -1,24 +1,16 @@
+import { MongoDBDatabaseProvider } from '../providers/mongodb.provider';
+import { MySQLDatabaseProvider } from '../providers/mysql.provider';
+import { PostgresDatabaseProvider } from '../providers/postgres.provider';
+import { RedisDatabaseProvider } from '../providers/redis.provider';
 import type { DatabaseProvider } from './database-provider.interface';
 
-/**
- * Database Registry
- * Central registry for all database providers
- * Automatically discovers and registers all available database types
- */
 class DatabaseRegistry {
   private providers = new Map<string, DatabaseProvider>();
 
-  /**
-   * Register a new database provider
-   */
-  register(provider: DatabaseProvider): void {
-    if (this.providers.has(provider.id)) {
-      console.warn(
-        `Provider with id "${provider.id}" is already registered. Overwriting.`,
-      );
-    }
-    this.providers.set(provider.id, provider);
-    console.log(`✅ Registered database provider: ${provider.name}`);
+  constructor(providers: DatabaseProvider[]) {
+    providers.forEach((provider) => {
+      this.providers.set(provider.id, provider);
+    });
   }
 
   /**
@@ -57,20 +49,17 @@ class DatabaseRegistry {
   }
 }
 
-// Singleton instance
-export const databaseRegistry = new DatabaseRegistry();
-
 /**
- * Hook to get a specific database provider
+ * Factory function to create a DatabaseRegistry instance
+ * Add new providers here when extending the application
  */
-export function useDatabaseProvider(id?: string): DatabaseProvider | null {
-  if (!id) return null;
-  return databaseRegistry.get(id) || null;
+export function createDatabaseRegistry(): DatabaseRegistry {
+  return new DatabaseRegistry([
+    new PostgresDatabaseProvider(),
+    new MySQLDatabaseProvider(),
+    new RedisDatabaseProvider(),
+    new MongoDBDatabaseProvider(),
+  ]);
 }
 
-/**
- * Hook to get all database providers
- */
-export function useAllDatabaseProviders(): DatabaseProvider[] {
-  return databaseRegistry.getAll();
-}
+export const databaseRegistry = createDatabaseRegistry();

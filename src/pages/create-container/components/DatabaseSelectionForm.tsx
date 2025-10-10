@@ -8,9 +8,6 @@ import { ReviewStep } from '../steps/review-step';
 import { FORM_STEPS } from '../types/form-steps';
 import { Stepper } from './Stepper';
 
-// Ensure providers are registered
-import '@/features/databases/providers';
-
 const pageVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {

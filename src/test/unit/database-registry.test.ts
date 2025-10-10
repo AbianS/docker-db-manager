@@ -1,50 +1,33 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { databaseRegistry } from '@/features/databases/registry/database-registry';
-import { MockDatabaseProvider } from '../utils/mock-providers';
-
-// Import to trigger provider registration
-import '@/features/databases/providers';
+import { describe, expect, it } from 'vitest';
+import {
+  createDatabaseRegistry,
+  databaseRegistry,
+} from '@/features/databases/registry/database-registry';
 
 describe('DatabaseRegistry', () => {
-  // Note: Registry is a singleton, so providers persist across tests
-  // This is intentional as the registry is meant to be initialized once
-  beforeEach(() => {
-    // Nothing to clear - registry is shared across tests
-  });
+  describe('Factory Pattern', () => {
+    it('should create a registry with providers', () => {
+      const customRegistry = createDatabaseRegistry();
 
-  describe('Registration', () => {
-    it('should register a new provider', () => {
-      const provider = new MockDatabaseProvider();
-      const initialCount = databaseRegistry.count();
-
-      databaseRegistry.register(provider);
-
-      expect(databaseRegistry.has(provider.id)).toBe(true);
-      expect(databaseRegistry.count()).toBeGreaterThanOrEqual(initialCount);
+      expect(customRegistry).toBeDefined();
+      expect(customRegistry.count()).toBeGreaterThan(0);
     });
 
-    it('should allow overwriting existing providers', () => {
-      const provider1 = new MockDatabaseProvider();
-      const provider2 = new MockDatabaseProvider();
+    it('should create independent registry instances', () => {
+      const registry1 = createDatabaseRegistry();
+      const registry2 = createDatabaseRegistry();
 
-      databaseRegistry.register(provider1);
-      const countAfterFirst = databaseRegistry.count();
-      databaseRegistry.register(provider2); // Should overwrite
-
-      // Count shouldn't change when overwriting (same ID)
-      expect(databaseRegistry.count()).toBe(countAfterFirst);
-      expect(databaseRegistry.has(provider1.id)).toBe(true);
+      // Both should have the same providers but be different instances
+      expect(registry1.count()).toBe(registry2.count());
+      expect(registry1).not.toBe(registry2);
     });
   });
 
   describe('Retrieval', () => {
     it('should retrieve a registered provider by ID', () => {
-      const provider = new MockDatabaseProvider();
-      databaseRegistry.register(provider);
-
-      const retrieved = databaseRegistry.get(provider.id);
+      const retrieved = databaseRegistry.get('PostgreSQL');
       expect(retrieved).toBeDefined();
-      expect(retrieved?.id).toBe(provider.id);
+      expect(retrieved?.id).toBe('PostgreSQL');
     });
 
     it('should return undefined for non-existent provider', () => {
@@ -67,10 +50,7 @@ describe('DatabaseRegistry', () => {
 
   describe('Existence Check', () => {
     it('should correctly check if provider exists', () => {
-      const provider = new MockDatabaseProvider();
-      databaseRegistry.register(provider);
-
-      expect(databaseRegistry.has(provider.id)).toBe(true);
+      expect(databaseRegistry.has('PostgreSQL')).toBe(true);
       expect(databaseRegistry.has('NonExistentDB')).toBe(false);
     });
   });
