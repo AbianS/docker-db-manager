@@ -60,9 +60,7 @@ export function DatabaseSelectionForm() {
           <DatabaseSelectionStep form={form} isSubmitting={isSubmitting} />
         );
       case 2:
-        return (
-          <ContainerConfigurationStep form={form} isSubmitting={isSubmitting} />
-        );
+        return <ContainerConfigurationStep form={form} />;
       case 3:
         return <ReviewStep form={form} />;
       default:

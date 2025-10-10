@@ -1,10 +1,6 @@
 import { useCallback, useEffect } from 'react';
-import type {
-  CreateContainerRequest,
-  UpdateContainerRequest,
-} from '../../shared/types/container';
-import { useContainerActions } from '../containers/hooks/use-container-actions';
-import { useContainerList } from '../containers/hooks/use-container-list';
+import { useDatabaseActions } from '../databases/hooks/use-database-actions';
+import { useDatabaseList } from '../databases/hooks/use-database-list';
 import { useDockerStatus } from '../docker/hooks/use-docker-status';
 
 /**
@@ -14,9 +10,9 @@ import { useDockerStatus } from '../docker/hooks/use-docker-status';
  * This hook replaces the old useApp, but with clearer responsibilities
  */
 export function useApp() {
-  // Container state and actions
-  const containerList = useContainerList();
-  const containerActions = useContainerActions();
+  // Database container state and actions
+  const containerList = useDatabaseList();
+  const containerActions = useDatabaseActions();
 
   // Docker status
   const docker = useDockerStatus();
@@ -53,30 +49,6 @@ export function useApp() {
   );
 
   /**
-   * Create container and update list
-   */
-  const createContainer = useCallback(
-    async (request: CreateContainerRequest) => {
-      const newContainer = await containerActions.create(request);
-      containerList.addLocal(newContainer);
-      return newContainer;
-    },
-    [containerActions, containerList],
-  );
-
-  /**
-   * Update container and synchronize list
-   */
-  const updateContainer = useCallback(
-    async (request: UpdateContainerRequest) => {
-      const updatedContainer = await containerActions.update(request);
-      containerList.updateLocal(updatedContainer);
-      return updatedContainer;
-    },
-    [containerActions, containerList],
-  );
-
-  /**
    * Remove container and update list
    */
   const removeContainer = useCallback(
@@ -88,13 +60,11 @@ export function useApp() {
   );
 
   return {
-    // Container state
+    // Database container state
     containers: containerList.containers,
     containersLoading: containerList.loading,
 
-    // Container actions
-    createContainer,
-    updateContainer,
+    // Database container actions
     removeContainer,
     startContainer: containerActions.start,
     stopContainer: containerActions.stop,
