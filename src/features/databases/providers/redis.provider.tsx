@@ -23,7 +23,44 @@ export class RedisDatabaseProvider implements DatabaseProvider {
   readonly defaultPort = 6379;
   readonly containerPort = 6379;
   readonly dataPath = '/data';
-  readonly versions = ['7.4', '7.2', '7.0', '6.2'];
+  readonly versions = [
+    // Redis 8.2
+    '8.2.2',
+    '8.2',
+    '8',
+    '8-bookworm',
+    '8.2-alpine',
+    '8-alpine3.22',
+    '8-alpine',
+    // Redis 8.0
+    '8.0.4',
+    '8.0',
+    '8.0-bookworm',
+    '8.0-alpine',
+    '8.0-alpine3.21',
+    // Redis 7.4
+    '7.4.6',
+    '7.4',
+    '7',
+    '7-bookworm',
+    '7.4-alpine',
+    '7-alpine3.21',
+    '7-alpine',
+    // Redis 7.2
+    '7.2.11',
+    '7.2',
+    '7.2-bookworm',
+    '7.2-alpine',
+    '7.2-alpine3.21',
+    // Redis 6.2
+    '6.2.20',
+    '6.2',
+    '6',
+    '6-bookworm',
+    '6.2-alpine',
+    '6-alpine3.21',
+    '6-alpine',
+  ];
 
   // ==================== Form Fields ====================
   getBasicFields({ isEditMode = false }: FieldsOptions): FormField[] {

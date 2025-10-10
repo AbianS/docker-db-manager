@@ -23,7 +23,26 @@ export class MongoDBDatabaseProvider implements DatabaseProvider {
   readonly defaultPort = 27017;
   readonly containerPort = 27017;
   readonly dataPath = '/data/db';
-  readonly versions = ['8.0', '7.0', '6.0', '5.0'];
+  readonly versions = [
+    // MongoDB 8.0
+    '8.0.15',
+    '8.0',
+    '8',
+    '8.0-noble',
+    '8-noble',
+    // MongoDB 7.0
+    '7.0.25',
+    '7.0',
+    '7',
+    '7.0-jammy',
+    '7-jammy',
+    // MongoDB 6.0
+    '6.0.26',
+    '6.0',
+    '6',
+    '6.0-jammy',
+    '6-jammy',
+  ];
 
   // ==================== Form Fields ====================
   getBasicFields({ isEditMode = false }: FieldsOptions): FormField[] {

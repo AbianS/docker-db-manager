@@ -23,7 +23,50 @@ export class PostgresDatabaseProvider implements DatabaseProvider {
   readonly defaultPort = 5432;
   readonly containerPort = 5432;
   readonly dataPath = '/var/lib/postgresql/data';
-  readonly versions = ['16', '15', '14', '13', '12'];
+  readonly versions = [
+    // PostgreSQL 18
+    '18.0',
+    '18',
+    '18-bookworm',
+    '18-alpine3.22',
+    '18-alpine3.21',
+    '18-alpine',
+    // PostgreSQL 17
+    '17.6',
+    '17',
+    '17-bookworm',
+    '17-alpine3.22',
+    '17-alpine3.21',
+    '17-alpine',
+    // PostgreSQL 16
+    '16.10',
+    '16',
+    '16-bookworm',
+    '16-alpine3.22',
+    '16-alpine3.21',
+    '16-alpine',
+    // PostgreSQL 15
+    '15.14',
+    '15',
+    '15-bookworm',
+    '15-alpine3.22',
+    '15-alpine3.21',
+    '15-alpine',
+    // PostgreSQL 14
+    '14.19',
+    '14',
+    '14-bookworm',
+    '14-alpine3.22',
+    '14-alpine3.21',
+    '14-alpine',
+    // PostgreSQL 13
+    '13.22',
+    '13',
+    '13-bookworm',
+    '13-alpine3.22',
+    '13-alpine3.21',
+    '13-alpine',
+  ];
 
   // ==================== Form Fields ====================
   getBasicFields({ isEditMode = false }: FieldsOptions): FormField[] {

@@ -23,7 +23,29 @@ export class MySQLDatabaseProvider implements DatabaseProvider {
   readonly defaultPort = 3306;
   readonly containerPort = 3306;
   readonly dataPath = '/var/lib/mysql';
-  readonly versions = ['8.4', '8.0', '5.7'];
+  readonly versions = [
+    // MySQL 9 (Innovation)
+    '9.4.0',
+    '9.4',
+    '9',
+    'innovation',
+    '9-oraclelinux9',
+    '9-oracle',
+    // MySQL 8.4 (LTS)
+    '8.4.6',
+    '8.4',
+    '8',
+    'lts',
+    '8.4-oraclelinux9',
+    '8.4-oracle',
+    // MySQL 8.0
+    '8.0.43',
+    '8.0',
+    '8.0-oraclelinux9',
+    '8.0-oracle',
+    '8.0-bookworm',
+    '8.0-debian',
+  ];
 
   // ==================== Form Fields ====================
   getBasicFields({ isEditMode = false }: FieldsOptions): FormField[] {
