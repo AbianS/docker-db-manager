@@ -4,7 +4,7 @@ import {
   DynamicFieldGroups,
   DynamicFormSection,
 } from '@/features/databases/components/dynamic-form-section';
-import { useDatabaseProvider } from '@/features/databases/hooks/use-registry';
+import { databaseRegistry } from '@/features/databases/registry/database-registry';
 import {
   Accordion,
   AccordionContent,
@@ -51,7 +51,7 @@ const itemVariants = {
 
 export function ContainerConfigurationStep({ form }: Props) {
   const selectedDbType = form.watch('databaseSelection.dbType');
-  const provider = useDatabaseProvider(selectedDbType);
+  const provider = databaseRegistry.get(selectedDbType!);
 
   if (!provider) {
     return (
