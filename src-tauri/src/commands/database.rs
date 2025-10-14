@@ -155,6 +155,9 @@ pub async fn update_container_from_docker_args(
             .ok_or("Container not found")?
     };
 
+    // Capture previous name for later cleanup
+    let previous_name = container.name.clone();
+
     // Determine if we need to recreate the container
     let name_changed = request.name != container.name;
     let port_changed = request.metadata.port != container.port;
@@ -190,11 +193,6 @@ pub async fn update_container_from_docker_args(
 
             docker_service
                 .migrate_volume_data(&app, &old_volume_name, &new_volume_name, data_path)
-                .await?;
-
-            // Remove old volume after successful migration
-            docker_service
-                .remove_volume_if_exists(&app, &old_volume_name)
                 .await?;
         }
         // Case 2: Enabling persistent data -> create new volume
@@ -322,6 +320,14 @@ pub async fn update_container_from_docker_args(
     // If saving to store fails, we should rollback - but for now just return error
     if let Err(store_error) = storage_service.save_databases_to_store(&app, &db_map).await {
         return Err(format!("Error saving configuration: {}", store_error));
+    }
+
+    // After successfully saving to store, cleanup old volume if migration occurred
+    if name_changed && container.stored_persist_data && request.metadata.persist_data {
+        let old_volume_name = format!("{}-data", previous_name);
+        let _ = docker_service
+            .remove_volume_if_exists(&app, &old_volume_name)
+            .await;
     }
 
     Ok(container)
