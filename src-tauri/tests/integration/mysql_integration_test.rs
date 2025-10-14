@@ -1,5 +1,7 @@
 use docker_db_manager_lib::services::DockerService;
-use docker_db_manager_lib::types::{ContainerMetadata, DockerRunArgs, DockerRunRequest, PortMapping, VolumeMount};
+use docker_db_manager_lib::types::{
+    ContainerMetadata, DockerRunArgs, DockerRunRequest, PortMapping, VolumeMount,
+};
 use std::collections::HashMap;
 
 mod utils;
@@ -84,9 +86,16 @@ async fn test_create_basic_mysql_container() {
         panic!("Docker failed to create MySQL container: {}", e);
     }
 
-    println!("✅ MySQL container created with ID: {}", container_id.unwrap());
+    println!(
+        "✅ MySQL container created with ID: {}",
+        container_id.unwrap()
+    );
 
-    wait_for_container(5).await; // MySQL takes longer to start
+    // Wait for MySQL to be ready
+    assert!(
+        wait_for_container_ready(container_name, 10, 1).await,
+        "MySQL container failed to start within timeout"
+    );
 
     assert!(
         container_exists(container_name).await,
@@ -178,9 +187,16 @@ async fn test_create_mysql_container_with_volume() {
 
     println!("✅ MySQL container with volume created successfully");
 
-    wait_for_container(5).await;
+    // Wait for MySQL to be ready
+    assert!(
+        wait_for_container_ready(container_name, 10, 1).await,
+        "MySQL container with volume failed to start within timeout"
+    );
 
-    assert!(container_exists(container_name).await, "Container should exist");
+    assert!(
+        container_exists(container_name).await,
+        "Container should exist"
+    );
     assert!(volume_exists(&volume_name).await, "Volume should exist");
 
     // Cleanup

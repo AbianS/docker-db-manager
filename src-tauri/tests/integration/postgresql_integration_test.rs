@@ -98,8 +98,11 @@ async fn test_create_basic_postgresql_container() {
         container_id.unwrap()
     );
 
-    // Verify that the container exists and is running
-    wait_for_container(3).await;
+    // Wait for PostgreSQL to be ready
+    assert!(
+        wait_for_container_ready(container_name, 10, 1).await,
+        "PostgreSQL container failed to start within timeout"
+    );
 
     assert!(
         container_exists(container_name).await,
@@ -205,7 +208,11 @@ async fn test_create_postgresql_container_with_volume() {
 
     println!("✅ PostgreSQL container with volume created successfully");
 
-    wait_for_container(3).await;
+    // Wait for PostgreSQL to be ready
+    assert!(
+        wait_for_container_ready(container_name, 10, 1).await,
+        "PostgreSQL container with volume failed to start within timeout"
+    );
 
     // Verify container and volume exist
     assert!(
@@ -278,7 +285,11 @@ async fn test_update_postgresql_port() {
         panic!("Failed to create initial container: {}", e);
     }
 
-    wait_for_container(2).await;
+    // Wait for initial container to be ready
+    assert!(
+        wait_for_container_ready(container_name, 10, 1).await,
+        "Initial PostgreSQL container failed to start"
+    );
 
     // Verify initial port
     if let Some(ports) = get_container_port(container_name).await {
@@ -291,7 +302,9 @@ async fn test_update_postgresql_port() {
 
     // Update: Remove old container and create with new port
     clean_container(container_name).await;
-    wait_for_container(3).await; // Wait longer to ensure port is released
+
+    // Wait longer to ensure port is released
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
     let updated_request = DockerRunRequest {
         name: container_name.to_string(),
@@ -328,7 +341,11 @@ async fn test_update_postgresql_port() {
         panic!("Failed to create updated container: {}", e);
     }
 
-    wait_for_container(2).await;
+    // Wait for updated container to be ready
+    assert!(
+        wait_for_container_ready(container_name, 10, 1).await,
+        "Updated PostgreSQL container failed to start"
+    );
 
     // Verify new port
     if let Some(ports) = get_container_port(container_name).await {

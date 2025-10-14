@@ -96,7 +96,11 @@ async fn test_create_basic_mongodb_container() {
         container_id.unwrap()
     );
 
-    wait_for_container(5).await; // MongoDB takes longer to start
+    // Wait for MongoDB to be ready
+    assert!(
+        wait_for_container_ready(container_name, 15, 1).await,
+        "MongoDB container failed to start within timeout"
+    );
 
     assert!(
         container_exists(container_name).await,
@@ -197,7 +201,11 @@ async fn test_create_mongodb_container_with_volume() {
 
     println!("✅ MongoDB container with volume created successfully");
 
-    wait_for_container(5).await;
+    // Wait for MongoDB to be ready
+    assert!(
+        wait_for_container_ready(container_name, 15, 1).await,
+        "MongoDB container with volume failed to start within timeout"
+    );
 
     assert!(
         container_exists(container_name).await,
@@ -279,7 +287,11 @@ async fn test_create_mongodb_container_without_auth() {
 
     println!("✅ MongoDB container without auth created");
 
-    wait_for_container(5).await;
+    // Wait for MongoDB to be ready
+    assert!(
+        wait_for_container_ready(container_name, 15, 1).await,
+        "MongoDB container without auth failed to start within timeout"
+    );
 
     assert!(
         container_exists(container_name).await,

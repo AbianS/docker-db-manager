@@ -79,7 +79,11 @@ async fn test_create_basic_redis_container() {
         container_id.unwrap()
     );
 
-    wait_for_container(2).await;
+    // Wait for Redis to be ready
+    assert!(
+        wait_for_container_ready(container_name, 10, 1).await,
+        "Redis container failed to start within timeout"
+    );
 
     assert!(
         container_exists(container_name).await,
@@ -165,7 +169,11 @@ async fn test_create_redis_container_with_auth() {
 
     println!("✅ Redis container with auth created");
 
-    wait_for_container(2).await;
+    // Wait for Redis to be ready
+    assert!(
+        wait_for_container_ready(container_name, 10, 1).await,
+        "Redis container with auth failed to start within timeout"
+    );
 
     assert!(
         container_exists(container_name).await,
@@ -262,7 +270,11 @@ async fn test_create_redis_container_with_persistence() {
 
     println!("✅ Redis container with persistence created");
 
-    wait_for_container(2).await;
+    // Wait for Redis to be ready
+    assert!(
+        wait_for_container_ready(container_name, 10, 1).await,
+        "Redis container with persistence failed to start within timeout"
+    );
 
     assert!(
         container_exists(container_name).await,

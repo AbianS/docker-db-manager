@@ -100,18 +100,41 @@ pub async fn get_container_port(name: &str) -> Option<String> {
         })
 }
 
-/// Waits a specified time for the container to initialize
-pub async fn wait_for_container_ready(seconds: u64) {
+/// Waits for a container to be ready with retry logic
+/// Returns true if container is ready, false if timeout is reached
+pub async fn wait_for_container_ready(
+    container_name: &str,
+    max_attempts: u32,
+    delay_secs: u64,
+) -> bool {
     println!(
-        "⏳ Waiting {} seconds for the container to initialize...",
-        seconds
+        "⏳ Waiting for container '{}' to be ready (max {} attempts, {}s delay)...",
+        container_name, max_attempts, delay_secs
     );
-    tokio::time::sleep(tokio::time::Duration::from_secs(seconds)).await;
-}
 
-/// Shorter alias to wait for container
-pub async fn wait_for_container(seconds: u64) {
-    wait_for_container_ready(seconds).await;
+    for attempt in 1..=max_attempts {
+        if container_exists(container_name).await {
+            if let Some(status) = get_container_status(container_name).await {
+                if status.contains("Up") {
+                    println!(
+                        "✅ Container '{}' is ready (attempt {}/{})",
+                        container_name, attempt, max_attempts
+                    );
+                    return true;
+                }
+            }
+        }
+
+        if attempt < max_attempts {
+            tokio::time::sleep(tokio::time::Duration::from_secs(delay_secs)).await;
+        }
+    }
+
+    println!(
+        "❌ Container '{}' did not become ready after {} attempts",
+        container_name, max_attempts
+    );
+    false
 }
 
 /// Creates a Docker volume
