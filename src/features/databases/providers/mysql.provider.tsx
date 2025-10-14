@@ -127,19 +127,6 @@ export class MySQLDatabaseProvider implements DatabaseProvider {
   getAdvancedFields(): FieldGroup[] {
     return [
       {
-        label: 'Connection Settings',
-        description: 'Configure how MySQL handles remote connections',
-        fields: [
-          {
-            name: 'mysqlSettings.rootHost',
-            label: 'Root Host',
-            type: 'text',
-            defaultValue: '%',
-            helpText: 'Host from which root can connect. "%" allows all hosts.',
-          },
-        ],
-      },
-      {
         label: 'Character Set & Collation',
         description: 'Configure default character encoding and collation',
         fields: [
@@ -195,21 +182,19 @@ export class MySQLDatabaseProvider implements DatabaseProvider {
       envVars.MYSQL_DATABASE = config.databaseName;
     }
 
-    // Advanced settings
-    if (config.mysqlSettings?.rootHost) {
-      envVars.MYSQL_ROOT_HOST = config.mysqlSettings.rootHost;
-    }
-
+    // Advanced settings via mysqld command flags (official mysql image doesn't support these as env vars)
+    const command: string[] = [];
+    
     if (config.mysqlSettings?.characterSet) {
-      envVars.MYSQL_CHARACTER_SET_SERVER = config.mysqlSettings.characterSet;
+      command.push(`--character-set-server=${config.mysqlSettings.characterSet}`);
     }
-
+    
     if (config.mysqlSettings?.collation) {
-      envVars.MYSQL_COLLATION_SERVER = config.mysqlSettings.collation;
+      command.push(`--collation-server=${config.mysqlSettings.collation}`);
     }
-
+    
     if (config.mysqlSettings?.sqlMode) {
-      envVars.MYSQL_SQL_MODE = config.mysqlSettings.sqlMode;
+      command.push(`--sql-mode=${config.mysqlSettings.sqlMode}`);
     }
 
     return {
@@ -219,7 +204,7 @@ export class MySQLDatabaseProvider implements DatabaseProvider {
       volumes: config.persistData
         ? [{ name: `${config.name}-data`, path: this.dataPath }]
         : [],
-      command: [],
+      command,
     };
   }
 
