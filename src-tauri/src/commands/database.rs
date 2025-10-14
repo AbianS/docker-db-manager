@@ -164,6 +164,16 @@ pub async fn update_container_from_docker_args(
     let persist_data_changed = request.metadata.persist_data != container.stored_persist_data;
     let needs_recreation = name_changed || port_changed || persist_data_changed;
 
+    // Track volumes for cleanup - define outside the if block for later access
+    let old_volumes: Vec<String> = if container.stored_persist_data {
+        vec![format!("{}-data", container.name)]
+    } else {
+        vec![]
+    };
+    
+    // Track if we need to cleanup old volumes after successful update
+    let should_cleanup_old_volumes = container.stored_persist_data && !request.metadata.persist_data;
+
     if needs_recreation {
         // Remove old container
         if let Some(old_id) = &container.container_id {
@@ -171,16 +181,14 @@ pub async fn update_container_from_docker_args(
         }
 
         // Handle volume migration if needed
-        let old_volumes: Vec<String> = if container.stored_persist_data {
-            vec![format!("{}-data", container.name)]
-        } else {
-            vec![]
-        };
-
         let new_volumes = &request.docker_args.volumes;
 
+        // Track if migration occurred for cleanup purposes
+        let volume_migrated =
+            name_changed && container.stored_persist_data && request.metadata.persist_data;
+
         // Case 1: Name changed AND has persistent data -> migrate volume
-        if name_changed && container.stored_persist_data && request.metadata.persist_data {
+        if volume_migrated {
             let old_volume_name = format!("{}-data", container.name);
             let new_volume_name = format!("{}-data", request.name);
 
@@ -203,14 +211,8 @@ pub async fn update_container_from_docker_args(
                     .await?;
             }
         }
-        // Case 3: Disabling persistent data -> cleanup old volumes
-        else if container.stored_persist_data && !request.metadata.persist_data {
-            for old_volume in &old_volumes {
-                docker_service
-                    .remove_volume_if_exists(&app, old_volume)
-                    .await?;
-            }
-        }
+        // Case 3: Disabling persistent data -> defer cleanup until after success
+        // (old volumes will be cleaned up after successful store save to prevent data loss)
         // Case 4: Name changed but NO persistent data -> just ensure new volumes exist if needed
         else if name_changed && request.metadata.persist_data {
             for volume in new_volumes {
@@ -234,11 +236,15 @@ pub async fn update_container_from_docker_args(
                     .await;
 
                 // Cleanup new volumes if they were created
+                // Note: If volume migration occurred, the old volume still exists with original data
                 for volume in new_volumes {
                     let _ = docker_service
                         .remove_volume_if_exists(&app, &volume.name)
                         .await;
                 }
+
+                // If migration occurred, note that old volume is preserved with original data
+                // User can retry the update operation without data loss
 
                 // Check if it's a port already in use error
                 if error.contains("port is already allocated") || error.contains("Bind for") {
@@ -350,6 +356,15 @@ pub async fn update_container_from_docker_args(
         let _ = docker_service
             .remove_volume_if_exists(&app, &old_volume_name)
             .await;
+    }
+
+    // Cleanup old volumes if persistent data was disabled (deferred to prevent data loss on error)
+    if should_cleanup_old_volumes {
+        for old_volume in &old_volumes {
+            let _ = docker_service
+                .remove_volume_if_exists(&app, old_volume)
+                .await;
+        }
     }
 
     Ok(container)

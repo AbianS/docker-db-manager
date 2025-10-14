@@ -173,7 +173,7 @@ pub async fn volume_exists(name: &str) -> bool {
         .unwrap_or(false)
 }
 
-/// Executes a Docker command and returns the container ID
+/// Executes a Docker command and returns stdout on success
 pub async fn run_docker_command(args: Vec<String>) -> Result<String, String> {
     let output = Command::new("docker")
         .args(&args)

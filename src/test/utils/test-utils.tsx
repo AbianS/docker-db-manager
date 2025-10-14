@@ -60,10 +60,12 @@ export function validateDockerRunArgs(args: any): boolean {
   // Validate ports structure
   for (const port of args.ports) {
     if (
-      !port.host ||
-      !port.container ||
       typeof port.host !== 'number' ||
-      typeof port.container !== 'number'
+      typeof port.container !== 'number' ||
+      port.host < 0 ||
+      port.host > 65535 ||
+      port.container <= 0 ||
+      port.container > 65535
     ) {
       return false;
     }
