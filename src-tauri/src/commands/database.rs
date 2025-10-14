@@ -290,7 +290,12 @@ pub async fn update_container_from_docker_args(
         container.status = "running".to_string();
         container.stored_persist_data = request.metadata.persist_data;
         container.stored_enable_auth = request.metadata.enable_auth;
-        container.stored_password = Some(request.metadata.password);
+
+        // Only update password if a non-empty value is provided
+        if !request.metadata.password.is_empty() {
+            container.stored_password = Some(request.metadata.password.clone());
+        }
+
         container.stored_username = request.metadata.username;
         container.stored_database_name = request.metadata.database_name;
 
