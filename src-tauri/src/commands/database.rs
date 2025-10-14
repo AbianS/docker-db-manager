@@ -317,8 +317,25 @@ pub async fn update_container_from_docker_args(
         map.clone()
     };
 
-    // If saving to store fails, we should rollback - but for now just return error
+    // If saving to store fails, rollback the changes (align with create_container behavior)
     if let Err(store_error) = storage_service.save_databases_to_store(&app, &db_map).await {
+        // Remove from memory store
+        databases.lock().unwrap().remove(&container_id);
+
+        // Cleanup new Docker resources if container was recreated
+        if needs_recreation {
+            if let Some(new_id) = &container.container_id {
+                let _ = docker_service.remove_container(&app, new_id).await;
+            }
+
+            // Cleanup new volumes
+            for volume in &request.docker_args.volumes {
+                let _ = docker_service
+                    .remove_volume_if_exists(&app, &volume.name)
+                    .await;
+            }
+        }
+
         return Err(format!("Error saving configuration: {}", store_error));
     }
 
