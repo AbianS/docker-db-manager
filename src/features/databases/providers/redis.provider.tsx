@@ -177,7 +177,7 @@ export class RedisDatabaseProvider implements DatabaseProvider {
             type: 'text',
             placeholder: '900 1 300 10 60 10000',
             helpText:
-              'Save snapshots: seconds changes (e.g., "900 1" = save after 900s if 1 key changed)',
+              'Save snapshots in pairs: seconds changes (e.g., "900 1 300 10" = save after 900s if 1+ keys changed, or after 300s if 10+ keys changed)',
           },
         ],
       },
@@ -222,7 +222,20 @@ export class RedisDatabaseProvider implements DatabaseProvider {
     }
 
     if (config.redisSettings?.save) {
-      command.push('--save', config.redisSettings.save);
+      // Split save pairs (e.g., "900 1 300 10" -> --save 900 1 --save 300 10)
+      const tokens = String(config.redisSettings.save)
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+
+      // Push pairs: --save <seconds> <changes>
+      for (let i = 0; i < tokens.length; i += 2) {
+        const seconds = tokens[i];
+        const changes = tokens[i + 1];
+        if (seconds && changes) {
+          command.push('--save', seconds, changes);
+        }
+      }
     }
 
     // Performance

@@ -184,15 +184,17 @@ export class MySQLDatabaseProvider implements DatabaseProvider {
 
     // Advanced settings via mysqld command flags (official mysql image doesn't support these as env vars)
     const command: string[] = [];
-    
+
     if (config.mysqlSettings?.characterSet) {
-      command.push(`--character-set-server=${config.mysqlSettings.characterSet}`);
+      command.push(
+        `--character-set-server=${config.mysqlSettings.characterSet}`,
+      );
     }
-    
+
     if (config.mysqlSettings?.collation) {
       command.push(`--collation-server=${config.mysqlSettings.collation}`);
     }
-    
+
     if (config.mysqlSettings?.sqlMode) {
       command.push(`--sql-mode=${config.mysqlSettings.sqlMode}`);
     }
