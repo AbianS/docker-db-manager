@@ -108,6 +108,11 @@ export function useDatabaseEditWizard(containerId: string) {
         throw new Error('Container not loaded');
       }
 
+      // Validate required fields
+      if (!containerConfiguration.port) {
+        throw new Error('Port is required');
+      }
+
       // Get the provider for this database type
       const provider = databaseRegistry.get(container.dbType);
       if (!provider) {
@@ -126,7 +131,7 @@ export function useDatabaseEditWizard(containerId: string) {
           id: container.id, // Keep the same ID
           dbType: container.dbType,
           version: containerConfiguration.version,
-          port: containerConfiguration.port!,
+          port: containerConfiguration.port,
           username: containerConfiguration.username,
           password: containerConfiguration.password || container.password || '',
           databaseName: containerConfiguration.databaseName,
