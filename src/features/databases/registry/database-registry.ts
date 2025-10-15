@@ -1,3 +1,4 @@
+import { ElasticsearchDatabaseProvider } from '../providers/elasticsearch.provider';
 import { InfluxDBDatabaseProvider } from '../providers/influxdb.provider';
 import { MariaDBDatabaseProvider } from '../providers/mariadb.provider';
 import { MongoDBDatabaseProvider } from '../providers/mongodb.provider';
@@ -65,6 +66,7 @@ export function createDatabaseRegistry(): DatabaseRegistry {
     new MongoDBDatabaseProvider(),
     new SQLServerDatabaseProvider(),
     new InfluxDBDatabaseProvider(),
+    new ElasticsearchDatabaseProvider(),
   ]);
 }
 
