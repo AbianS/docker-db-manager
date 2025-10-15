@@ -169,7 +169,7 @@ export class MongoDBDatabaseProvider implements DatabaseProvider {
             options: ['wiredTiger', 'inMemory'],
             defaultValue: 'wiredTiger',
             helpText:
-              'Storage engine to use. WiredTiger is the default and recommended.',
+              'Storage engine to use. WiredTiger is the default. Note: inMemory requires MongoDB Enterprise Edition.',
           },
           {
             name: 'mongoSettings.oplogSize',
@@ -218,9 +218,16 @@ export class MongoDBDatabaseProvider implements DatabaseProvider {
       command.push('--replSet', config.mongoSettings.replicaSet);
     }
 
-    // Storage engine
-    if (config.mongoSettings?.storageEngine === 'inMemory') {
-      command.push('--storageEngine', 'inMemory');
+    // Storage engine (inMemory is Enterprise-only and not available in Community Docker images)
+    // Only set non-default storage engines if explicitly needed and image supports it
+    if (
+      config.mongoSettings?.storageEngine &&
+      config.mongoSettings.storageEngine !== 'wiredTiger'
+    ) {
+      console.warn(
+        `Note: ${config.mongoSettings.storageEngine} storage engine may require MongoDB Enterprise Edition`,
+      );
+      command.push('--storageEngine', config.mongoSettings.storageEngine);
     }
 
     // Directory per DB
@@ -230,7 +237,7 @@ export class MongoDBDatabaseProvider implements DatabaseProvider {
 
     // Oplog size (only for replica sets)
     if (config.mongoSettings?.replicaSet && config.mongoSettings?.oplogSize) {
-      command.push('--oplogSize', config.mongoSettings.oplogSize.toString());
+      command.push('--oplogSizeMB', config.mongoSettings.oplogSize.toString());
     }
 
     return {

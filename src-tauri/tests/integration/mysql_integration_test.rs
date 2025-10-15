@@ -174,7 +174,9 @@ async fn test_create_mysql_container_with_volume() {
     );
 
     if let Err(e) = create_volume(&volume_name).await {
-        println!("⚠️ Warning when creating volume: {}", e);
+        clean_container(container_name).await;
+        clean_volume(&volume_name).await;
+        panic!("Failed to create volume: {}", e);
     }
 
     let container_id = run_docker_command(command).await;
