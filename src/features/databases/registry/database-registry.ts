@@ -3,6 +3,7 @@ import { MongoDBDatabaseProvider } from '../providers/mongodb.provider';
 import { MySQLDatabaseProvider } from '../providers/mysql.provider';
 import { PostgresDatabaseProvider } from '../providers/postgres.provider';
 import { RedisDatabaseProvider } from '../providers/redis.provider';
+import { SQLServerDatabaseProvider } from '../providers/sqlserver.provider';
 import type { DatabaseProvider } from './database-provider.interface';
 
 class DatabaseRegistry {
@@ -61,6 +62,7 @@ export function createDatabaseRegistry(): DatabaseRegistry {
     new MariaDBDatabaseProvider(),
     new RedisDatabaseProvider(),
     new MongoDBDatabaseProvider(),
+    new SQLServerDatabaseProvider(),
   ]);
 }
 

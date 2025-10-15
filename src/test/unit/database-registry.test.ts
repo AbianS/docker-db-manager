@@ -99,10 +99,17 @@ describe('DatabaseRegistry', () => {
       expect(mariadb?.defaultPort).toBe(3306);
     });
 
-    it('should have at least 5 real providers registered', () => {
-      // Should have at least the 5 main database providers
+    it('should have SQL Server provider registered', () => {
+      const sqlserver = databaseRegistry.get('SQLServer');
+      expect(sqlserver).toBeDefined();
+      expect(sqlserver?.name).toBe('SQL Server');
+      expect(sqlserver?.defaultPort).toBe(1433);
+    });
+
+    it('should have at least 6 real providers registered', () => {
+      // Should have at least the 6 main database providers
       // (May have more if mock providers were registered in other tests)
-      expect(databaseRegistry.count()).toBeGreaterThanOrEqual(5);
+      expect(databaseRegistry.count()).toBeGreaterThanOrEqual(6);
     });
 
     it('should have all expected provider IDs', () => {
@@ -112,6 +119,7 @@ describe('DatabaseRegistry', () => {
       expect(ids).toContain('Redis');
       expect(ids).toContain('MongoDB');
       expect(ids).toContain('MariaDB');
+      expect(ids).toContain('SQLServer');
     });
   });
 });
