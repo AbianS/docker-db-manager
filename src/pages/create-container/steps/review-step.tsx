@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
 import { UseFormReturn } from 'react-hook-form';
+import { databaseRegistry } from '@/features/databases/registry/database-registry';
 import { Card, CardContent } from '../../../shared/components/ui/card';
 import { CodeBlock } from '../../../shared/components/ui/code-block';
-import { CreateDatabaseFormValidation } from '../schemas/database-form.schema';
+import { CreateDatabaseFormData } from '../hooks/use-container-creation-wizard';
 
 interface Props {
-  form: UseFormReturn<CreateDatabaseFormValidation>;
+  form: UseFormReturn<CreateDatabaseFormData>;
 }
 
 const containerVariants = {
@@ -33,158 +34,60 @@ const itemVariants = {
   },
 };
 
-// Function to generate Docker command based on configuration
-function generateDockerCommand(formData: CreateDatabaseFormValidation): string {
+/**
+ * Generate Docker command preview from form data using provider
+ */
+function generateDockerCommand(formData: CreateDatabaseFormData): string {
   const { databaseSelection, containerConfiguration } = formData;
   const { dbType } = databaseSelection;
-  const {
-    name,
-    port,
-    version,
-    username,
-    password,
-    databaseName,
-    persistData,
-    enableAuth,
-    postgresSettings,
-    mysqlSettings,
-    redisSettings,
-    mongoSettings,
-  } = containerConfiguration;
 
-  // Command lines formatted for better readability
+  if (!dbType) {
+    return '# Please select a database type first';
+  }
+
+  // Get the provider for this database type
+  const provider = databaseRegistry.get(dbType);
+  if (!provider) {
+    return `# Error: No provider found for ${dbType}`;
+  }
+
+  // Let the provider build the Docker arguments
+  const dockerArgs = provider.buildDockerArgs(containerConfiguration);
+  const { name } = containerConfiguration;
+
+  // Format the command nicely for display
   const lines: string[] = ['docker run -d \\'];
 
-  // Add container name
+  // Container name
   lines.push(`  --name ${name} \\`);
 
-  // Add port mapping and other configurations based on database type
-  switch (dbType) {
-    case 'PostgreSQL':
-      lines.push(`  -p ${port}:5432 \\`);
+  // Port mappings
+  if (dockerArgs.ports && dockerArgs.ports.length > 0) {
+    for (const port of dockerArgs.ports) {
+      lines.push(`  -p ${port.host}:${port.container} \\`);
+    }
+  }
 
-      // Basic environment variables
-      lines.push(`  -e POSTGRES_USER=${username || 'postgres'} \\`);
-      lines.push(`  -e POSTGRES_PASSWORD=${password} \\`);
-      if (databaseName) {
-        lines.push(`  -e POSTGRES_DB=${databaseName} \\`);
-      }
+  // Environment variables
+  if (dockerArgs.envVars && Object.keys(dockerArgs.envVars).length > 0) {
+    for (const [key, value] of Object.entries(dockerArgs.envVars)) {
+      lines.push(`  -e ${key}=${value} \\`);
+    }
+  }
 
-      // PostgreSQL-specific configurations
-      if (postgresSettings?.initdbArgs) {
-        lines.push(
-          `  -e POSTGRES_INITDB_ARGS="${postgresSettings.initdbArgs}" \\`,
-        );
-      }
-      if (postgresSettings?.hostAuthMethod) {
-        lines.push(
-          `  -e POSTGRES_HOST_AUTH_METHOD=${postgresSettings.hostAuthMethod} \\`,
-        );
-      }
-      if (postgresSettings?.sharedPreloadLibraries) {
-        lines.push(
-          `  -e POSTGRES_SHARED_PRELOAD_LIBRARIES=${postgresSettings.sharedPreloadLibraries} \\`,
-        );
-      }
+  // Volumes
+  if (dockerArgs.volumes && dockerArgs.volumes.length > 0) {
+    for (const volume of dockerArgs.volumes) {
+      lines.push(`  -v ${volume.name}:${volume.path} \\`);
+    }
+  }
 
-      // Data persistence
-      if (persistData) {
-        lines.push(`  -v ${name}-data:/var/lib/postgresql/data \\`);
-      }
+  // Image with tag
+  lines.push(`  ${dockerArgs.image}`);
 
-      lines.push(`  postgres:${version}`);
-      break;
-
-    case 'MySQL':
-      lines.push(`  -p ${port}:3306 \\`);
-
-      // Basic environment variables
-      lines.push(`  -e MYSQL_ROOT_PASSWORD=${password} \\`);
-      if (databaseName) {
-        lines.push(`  -e MYSQL_DATABASE=${databaseName} \\`);
-      }
-
-      // MySQL-specific configurations
-      if (mysqlSettings?.rootHost) {
-        lines.push(`  -e MYSQL_ROOT_HOST=${mysqlSettings.rootHost} \\`);
-      }
-      if (mysqlSettings?.characterSet) {
-        lines.push(`  -e MYSQL_CHARSET=${mysqlSettings.characterSet} \\`);
-      }
-      if (mysqlSettings?.collation) {
-        lines.push(`  -e MYSQL_COLLATION=${mysqlSettings.collation} \\`);
-      }
-      if (mysqlSettings?.sqlMode) {
-        lines.push(`  -e MYSQL_SQL_MODE=${mysqlSettings.sqlMode} \\`);
-      }
-
-      // Data persistence
-      if (persistData) {
-        lines.push(`  -v ${name}-data:/var/lib/mysql \\`);
-      }
-
-      lines.push(`  mysql:${version}`);
-      break;
-
-    case 'Redis':
-      lines.push(`  -p ${port}:6379 \\`);
-
-      // Data persistence
-      if (persistData) {
-        lines.push(`  -v ${name}-data:/data \\`);
-      }
-
-      // Redis command with specific configurations
-      const redisCommand = 'redis-server';
-      const redisArgs: string[] = [];
-
-      if (password) {
-        redisArgs.push(`--requirepass ${password}`);
-      }
-      if (redisSettings?.maxMemory) {
-        redisArgs.push(`--maxmemory ${redisSettings.maxMemory}`);
-      }
-      if (redisSettings?.maxMemoryPolicy) {
-        redisArgs.push(`--maxmemory-policy ${redisSettings.maxMemoryPolicy}`);
-      }
-      if (redisSettings?.appendOnly) {
-        redisArgs.push('--appendonly yes');
-      }
-
-      if (redisArgs.length > 0) {
-        lines.push(`  redis:${version} ${redisCommand} ${redisArgs.join(' ')}`);
-      } else {
-        lines.push(`  redis:${version}`);
-      }
-      break;
-
-    case 'MongoDB':
-      lines.push(`  -p ${port}:27017 \\`);
-
-      // Environment variables for authentication
-      if (enableAuth && username && password) {
-        lines.push(`  -e MONGO_INITDB_ROOT_USERNAME=${username} \\`);
-        lines.push(`  -e MONGO_INITDB_ROOT_PASSWORD=${password} \\`);
-      }
-      if (databaseName) {
-        lines.push(`  -e MONGO_INITDB_DATABASE=${databaseName} \\`);
-      }
-
-      // MongoDB-specific configurations
-      if (mongoSettings?.authSource) {
-        lines.push(`  -e MONGO_AUTH_SOURCE=${mongoSettings.authSource} \\`);
-      }
-      if (mongoSettings?.oplogSize) {
-        lines.push(`  -e MONGO_OPLOG_SIZE=${mongoSettings.oplogSize} \\`);
-      }
-
-      // Data persistence
-      if (persistData) {
-        lines.push(`  -v ${name}-data:/data/db \\`);
-      }
-
-      lines.push(`  mongo:${version}`);
-      break;
+  // Command arguments (if any)
+  if (dockerArgs.command && dockerArgs.command.length > 0) {
+    lines[lines.length - 1] += ` ${dockerArgs.command.join(' ')}`;
   }
 
   return lines.join('\n');

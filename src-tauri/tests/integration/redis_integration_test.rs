@@ -1,6 +1,8 @@
 use docker_db_manager_lib::services::DockerService;
-use docker_db_manager_lib::types::{settings::RedisSettings, CreateDatabaseRequest};
-use std::process::Command;
+use docker_db_manager_lib::types::{
+    ContainerMetadata, DockerRunArgs, DockerRunRequest, PortMapping, VolumeMount,
+};
+use std::collections::HashMap;
 
 mod utils;
 use utils::*;
@@ -8,49 +10,52 @@ use utils::*;
 /// Integration tests specific to Redis
 ///
 /// These tests verify that Redis functionality works correctly
-/// with real Docker, including creation with and without authentication.
+/// with real Docker, including container creation, configuration, and cleanup.
 
 #[tokio::test]
-async fn test_create_redis_container_without_auth() {
-    // Skip if Docker is not available
+async fn test_create_basic_redis_container() {
     if !docker_available() {
         println!("⚠️ Docker is not available, skipping Redis test");
         return;
     }
 
-    let container_name = "test-redis-no-auth-integration";
+    let container_name = "test-redis-basic-integration";
 
     // Initial cleanup
     clean_container(container_name).await;
 
-    // Arrange - Redis configuration without authentication
     let service = DockerService::new();
-    let request = CreateDatabaseRequest {
+
+    let env_vars = HashMap::new(); // Redis doesn't need env vars for basic setup
+
+    let request = DockerRunRequest {
         name: container_name.to_string(),
-        db_type: "Redis".to_string(),
-        version: "7-alpine".to_string(),
-        port: 6381,
-        persist_data: false,
-        username: None,
-        password: "".to_string(), // No password
-        database_name: None,
-        enable_auth: false, // No authentication
-        max_connections: Some(100),
-        postgres_settings: None,
-        mysql_settings: None,
-        redis_settings: None,
-        mongo_settings: None,
+        docker_args: DockerRunArgs {
+            image: "redis:7-alpine".to_string(),
+            env_vars,
+            ports: vec![PortMapping {
+                host: 6380,
+                container: 6379,
+            }],
+            volumes: vec![],
+            command: vec![],
+        },
+        metadata: ContainerMetadata {
+            id: uuid::Uuid::new_v4().to_string(),
+            db_type: "Redis".to_string(),
+            version: "7-alpine".to_string(),
+            port: 6380,
+            username: None,
+            password: String::new(),
+            database_name: None,
+            persist_data: false,
+            enable_auth: false,
+            max_connections: Some(10000),
+        },
     };
 
-    // Act - Build and execute command
-    let command_result = service.build_docker_command(&request, &None);
-    assert!(
-        command_result.is_ok(),
-        "DockerService should build valid Redis command"
-    );
-
-    let command = command_result.unwrap();
-    println!("🐳 Redis command without auth generated: {:?}", command);
+    let command = service.build_docker_command_from_args(&request.name, &request.docker_args);
+    println!("🐳 Redis command generated: {:?}", command);
 
     // Verify Redis-specific elements
     assert!(
@@ -58,69 +63,48 @@ async fn test_create_redis_container_without_auth() {
         "Should use correct Redis image"
     );
     assert!(
-        command.contains(&"6381:6379".to_string()),
+        command.contains(&"6380:6379".to_string()),
         "Should map Redis port correctly"
     );
-    // Without auth, should not contain requirepass
-    assert!(
-        !command.iter().any(|arg| arg.contains("requirepass")),
-        "Redis without auth should not have requirepass"
-    );
 
-    // Execute Docker command
-    let output = Command::new("docker")
-        .args(&command)
-        .output()
-        .expect("Failed to execute Redis command");
+    let container_id = run_docker_command(command).await;
 
-    if !output.status.success() {
-        let error = String::from_utf8_lossy(&output.stderr);
+    if let Err(e) = container_id {
         clean_container(container_name).await;
-        panic!("Docker failed to create Redis container: {}", error);
+        panic!("Docker failed to create Redis container: {}", e);
     }
 
-    let container_id = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    println!("✅ Redis container created with ID: {}", container_id);
+    println!(
+        "✅ Redis container created with ID: {}",
+        container_id.unwrap()
+    );
 
-    // Verify that the container exists and is running
-    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+    // Wait for Redis to be ready
+    assert!(
+        wait_for_container_ready(container_name, 10, 1).await,
+        "Redis container failed to start within timeout"
+    );
 
     assert!(
         container_exists(container_name).await,
         "Redis container should exist"
     );
 
-    // Verify status
-    let status_output = Command::new("docker")
-        .args(&[
-            "ps",
-            "--filter",
-            &format!("name={}", container_name),
-            "--format",
-            "{{.Status}}",
-        ])
-        .output()
-        .expect("Failed to get Redis status");
-
-    let status = String::from_utf8_lossy(&status_output.stdout)
-        .trim()
-        .to_string();
-    println!("📊 Redis container status: {}", status);
+    if let Some(status) = get_container_status(container_name).await {
+        println!("📊 Redis container status: {}", status);
+        assert!(status.contains("Up"), "Container should be running");
+    }
 
     // Cleanup
     clean_container(container_name).await;
-    assert!(
-        !container_exists(container_name).await,
-        "Redis container should be deleted"
-    );
 
-    println!("✅ Redis test without auth completed successfully");
+    println!("✅ Basic Redis test completed successfully");
 }
 
 #[tokio::test]
 async fn test_create_redis_container_with_auth() {
     if !docker_available() {
-        println!("⚠️ Docker is not available, skipping Redis test with auth");
+        println!("⚠️ Docker is not available, skipping Redis auth test");
         return;
     }
 
@@ -129,190 +113,178 @@ async fn test_create_redis_container_with_auth() {
     // Initial cleanup
     clean_container(container_name).await;
 
-    // Arrange - Redis configuration with authentication
     let service = DockerService::new();
-    let request = CreateDatabaseRequest {
+
+    let env_vars = HashMap::new();
+
+    let request = DockerRunRequest {
         name: container_name.to_string(),
-        db_type: "Redis".to_string(),
-        version: "7-alpine".to_string(),
-        port: 6382,
-        persist_data: false,
-        username: None,
-        password: "redis_secure_pass_123".to_string(),
-        database_name: None,
-        enable_auth: true, // With authentication
-        max_connections: Some(200),
-        postgres_settings: None,
-        mysql_settings: None,
-        redis_settings: None,
-        mongo_settings: None,
+        docker_args: DockerRunArgs {
+            image: "redis:7-alpine".to_string(),
+            env_vars,
+            ports: vec![PortMapping {
+                host: 6381,
+                container: 6379,
+            }],
+            volumes: vec![],
+            command: vec![
+                "redis-server".to_string(),
+                "--requirepass".to_string(),
+                "myredispass123".to_string(),
+            ],
+        },
+        metadata: ContainerMetadata {
+            id: uuid::Uuid::new_v4().to_string(),
+            db_type: "Redis".to_string(),
+            version: "7-alpine".to_string(),
+            port: 6381,
+            username: None,
+            password: "myredispass123".to_string(),
+            database_name: None,
+            persist_data: false,
+            enable_auth: true,
+            max_connections: Some(10000),
+        },
     };
 
-    // Act - Build command with authentication
-    let command_result = service.build_docker_command(&request, &None);
-    assert!(
-        command_result.is_ok(),
-        "Should build Redis command with auth"
-    );
-
-    let command = command_result.unwrap();
+    let command = service.build_docker_command_from_args(&request.name, &request.docker_args);
     println!("🐳 Redis command with auth: {:?}", command);
 
-    // Verify Redis-specific elements with auth
-    assert!(
-        command.contains(&"redis:7-alpine".to_string()),
-        "Should use correct Redis image"
-    );
-    assert!(
-        command.contains(&"6382:6379".to_string()),
-        "Should map Redis port correctly"
-    );
-    assert!(
-        command.contains(&"redis-server".to_string()),
-        "Should include redis-server for configuration"
-    );
+    // Verify auth command
     assert!(
         command.contains(&"--requirepass".to_string()),
-        "Should include requirepass for auth"
+        "Should include requirepass flag"
     );
     assert!(
-        command.contains(&"redis_secure_pass_123".to_string()),
-        "Should include the password"
+        command.contains(&"myredispass123".to_string()),
+        "Should include password"
     );
 
-    // Execute command
-    let output = Command::new("docker")
-        .args(&command)
-        .output()
-        .expect("Failed to execute Redis command with auth");
+    let container_id = run_docker_command(command).await;
 
-    if !output.status.success() {
-        let error = String::from_utf8_lossy(&output.stderr);
+    if let Err(e) = container_id {
         clean_container(container_name).await;
-        panic!(
-            "Docker failed to create Redis container with auth: {}",
-            error
-        );
+        panic!("Docker failed to create Redis container with auth: {}", e);
     }
 
-    let container_id = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    println!(
-        "✅ Redis container with auth created with ID: {}",
-        container_id
+    println!("✅ Redis container with auth created");
+
+    // Wait for Redis to be ready
+    assert!(
+        wait_for_container_ready(container_name, 10, 1).await,
+        "Redis container with auth failed to start within timeout"
     );
 
-    // Verify functionality
-    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
     assert!(
         container_exists(container_name).await,
-        "Redis container with auth should exist"
+        "Container should exist"
     );
 
     // Cleanup
     clean_container(container_name).await;
-    assert!(
-        !container_exists(container_name).await,
-        "Redis container should be deleted"
-    );
 
-    println!("✅ Redis test with auth completed successfully");
+    println!("✅ Redis auth test completed");
 }
 
 #[tokio::test]
-async fn test_create_redis_container_with_advanced_configuration() {
+async fn test_create_redis_container_with_persistence() {
     if !docker_available() {
-        println!("⚠️ Docker is not available, skipping advanced Redis test");
+        println!("⚠️ Docker is not available, skipping Redis persistence test");
         return;
     }
 
-    let container_name = "test-redis-advanced-integration";
+    let container_name = "test-redis-persist-integration";
+    let volume_name = format!("{}-data", container_name);
 
     // Initial cleanup
     clean_container(container_name).await;
+    clean_volume(&volume_name).await;
 
-    // Arrange - Redis with advanced configuration using redis_settings
     let service = DockerService::new();
-    let redis_settings = RedisSettings {
-        max_memory: "256mb".to_string(),
-        max_memory_policy: "allkeys-lru".to_string(),
-        append_only: true,
-        require_pass: true,
-    };
 
-    let request = CreateDatabaseRequest {
+    let env_vars = HashMap::new();
+
+    let request = DockerRunRequest {
         name: container_name.to_string(),
-        db_type: "Redis".to_string(),
-        version: "7-alpine".to_string(),
-        port: 6383,
-        persist_data: false,
-        username: None,
-        password: "advanced_pass".to_string(),
-        database_name: None,
-        enable_auth: true,
-        max_connections: Some(500),
-        postgres_settings: None,
-        mysql_settings: None,
-        redis_settings: Some(redis_settings),
-        mongo_settings: None,
+        docker_args: DockerRunArgs {
+            image: "redis:7-alpine".to_string(),
+            env_vars,
+            ports: vec![PortMapping {
+                host: 6382,
+                container: 6379,
+            }],
+            volumes: vec![VolumeMount {
+                name: volume_name.clone(),
+                path: "/data".to_string(),
+            }],
+            command: vec![
+                "redis-server".to_string(),
+                "--appendonly".to_string(),
+                "yes".to_string(),
+            ],
+        },
+        metadata: ContainerMetadata {
+            id: uuid::Uuid::new_v4().to_string(),
+            db_type: "Redis".to_string(),
+            version: "7-alpine".to_string(),
+            port: 6382,
+            username: None,
+            password: String::new(),
+            database_name: None,
+            persist_data: true,
+            enable_auth: false,
+            max_connections: Some(10000),
+        },
     };
 
-    // Act - Build command with advanced configuration
-    let command_result = service.build_docker_command(&request, &None);
-    assert!(
-        command_result.is_ok(),
-        "Should build advanced Redis command"
-    );
+    let command = service.build_docker_command_from_args(&request.name, &request.docker_args);
+    println!("🐳 Redis command with persistence: {:?}", command);
 
-    let command = command_result.unwrap();
-    println!("🐳 Advanced Redis command: {:?}", command);
-
-    // Verify advanced configuration
     assert!(
-        command.contains(&"--maxmemory".to_string()),
-        "Should include maxmemory"
+        command.contains(&"-v".to_string()),
+        "Should include volume flag"
     );
     assert!(
-        command.contains(&"256mb".to_string()),
-        "Should include memory limit"
-    );
-    assert!(
-        command.contains(&"--maxmemory-policy".to_string()),
-        "Should include memory policy"
-    );
-    assert!(
-        command.contains(&"allkeys-lru".to_string()),
-        "Should include LRU policy"
+        command.contains(&format!("{}:/data", volume_name)),
+        "Should map Redis data volume"
     );
     assert!(
         command.contains(&"--appendonly".to_string()),
-        "Should include appendonly"
-    );
-    assert!(
-        command.contains(&"yes".to_string()),
-        "Should enable appendonly"
+        "Should enable AOF persistence"
     );
 
-    // Execute command
-    let output = Command::new("docker")
-        .args(&command)
-        .output()
-        .expect("Failed to execute advanced Redis command");
+    if let Err(e) = create_volume(&volume_name).await {
+        println!("⚠️ Warning when creating volume: {}", e);
+    }
 
-    if !output.status.success() {
-        let error = String::from_utf8_lossy(&output.stderr);
+    let container_id = run_docker_command(command).await;
+
+    if let Err(e) = container_id {
         clean_container(container_name).await;
+        clean_volume(&volume_name).await;
         panic!(
-            "Docker failed to create advanced Redis container: {}",
-            error
+            "Docker failed to create Redis container with persistence: {}",
+            e
         );
     }
 
-    println!("✅ Advanced Redis container created successfully");
+    println!("✅ Redis container with persistence created");
 
-    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+    // Wait for Redis to be ready
+    assert!(
+        wait_for_container_ready(container_name, 10, 1).await,
+        "Redis container with persistence failed to start within timeout"
+    );
+
+    assert!(
+        container_exists(container_name).await,
+        "Container should exist"
+    );
+    assert!(volume_exists(&volume_name).await, "Volume should exist");
 
     // Cleanup
     clean_container(container_name).await;
+    clean_volume(&volume_name).await;
 
-    println!("✅ Advanced Redis test completed successfully");
+    println!("✅ Redis persistence test completed");
 }

@@ -1,44 +1,13 @@
 import { motion } from 'framer-motion';
 import { Controller, UseFormReturn } from 'react-hook-form';
-import { SiMongodb, SiMysql, SiPostgresql, SiRedis } from 'react-icons/si';
+import { databaseRegistry } from '@/features/databases/registry/database-registry';
 import { cn } from '../../../shared/utils/cn';
-import { CreateDatabaseFormValidation } from '../schemas/database-form.schema';
+import type { CreateDatabaseFormData } from '../hooks/use-container-creation-wizard';
 
 interface Props {
-  form: UseFormReturn<CreateDatabaseFormValidation>;
+  form: UseFormReturn<CreateDatabaseFormData>;
   isSubmitting: boolean;
 }
-
-const databases = [
-  {
-    name: 'PostgreSQL',
-    icon: <SiPostgresql className="w-6 h-6" />,
-    color: '#336791',
-    description: 'Advanced open-source relational database',
-    versions: ['16', '15', '14', '13', '12'],
-  },
-  {
-    name: 'MySQL',
-    icon: <SiMysql className="w-6 h-6" />,
-    color: '#4479A1',
-    description: 'Relational database management system',
-    versions: ['8.0', '5.7'],
-  },
-  {
-    name: 'Redis',
-    icon: <SiRedis className="w-6 h-6" />,
-    color: '#DC382D',
-    description: 'In-memory database for data structure storage',
-    versions: ['7.2', '7.0', '6.2'],
-  },
-  {
-    name: 'MongoDB',
-    icon: <SiMongodb className="w-6 h-6" />,
-    color: '#47A248',
-    description: 'Document-oriented NoSQL database',
-    versions: ['7.0', '6.0', '5.0'],
-  },
-] as const;
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -83,6 +52,8 @@ export function DatabaseSelectionStep({ form, isSubmitting }: Props) {
     control,
   } = form;
 
+  const providers = databaseRegistry.getAll();
+
   return (
     <motion.div
       className="space-y-3"
@@ -102,9 +73,9 @@ export function DatabaseSelectionStep({ form, isSubmitting }: Props) {
               className="grid grid-cols-2 gap-3"
               variants={containerVariants}
             >
-              {databases.map((database, index) => (
+              {providers.map((provider, index) => (
                 <motion.div
-                  key={database.name}
+                  key={provider.id}
                   variants={buttonVariants}
                   initial="idle"
                   whileHover="hover"
@@ -116,10 +87,10 @@ export function DatabaseSelectionStep({ form, isSubmitting }: Props) {
                     className={cn(
                       'p-4 rounded-lg border-2 transition-all duration-200 ease-out border-white/10 bg-white/10 hover:border-primary hover:shadow-lg hover:opacity-90 group w-full',
                       {
-                        'border-primary bg-primary/20': value === database.name,
+                        'border-primary bg-primary/20': value === provider.id,
                       },
                     )}
-                    onClick={() => onChange(database.name)}
+                    onClick={() => onChange(provider.id)}
                     disabled={isSubmitting}
                     variants={itemVariants}
                   >
@@ -130,20 +101,19 @@ export function DatabaseSelectionStep({ form, isSubmitting }: Props) {
                           'group-hover:scale-110',
                           'group-active:scale-90',
                         )}
-                        style={{ backgroundColor: database.color }}
+                        style={{ backgroundColor: provider.color }}
                         animate={{
-                          rotate:
-                            value === database.name ? [0, -5, 5, -5, 0] : 0,
+                          rotate: value === provider.id ? [0, -5, 5, -5, 0] : 0,
                         }}
                         transition={{
                           duration: 0.5,
                           ease: 'easeInOut',
                         }}
                       >
-                        {database.icon}
+                        {provider.icon}
                       </motion.div>
                       <span className="font-medium text-foreground text-sm">
-                        {database.name}
+                        {provider.name}
                       </span>
                     </div>
                   </motion.button>

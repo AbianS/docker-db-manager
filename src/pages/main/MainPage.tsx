@@ -1,5 +1,4 @@
 import { Toaster } from 'sonner';
-import { DatabaseConfigPanel } from '../../shared/components/DatabaseConfigPanel';
 import { DeleteConfirmationDialog } from '../../shared/components/DeleteConfirmationDialog';
 import { DockerUnavailableOverlay } from '../../shared/components/DockerUnavailableOverlay';
 import { DatabaseManager } from './components/DatabaseManager';
@@ -26,15 +25,6 @@ export function MainPage() {
         onCreateContainer={page.openCreateWindow}
         onEditContainer={page.openEditWindow}
         disabled={page.containersLoading || !page.isDockerAvailable}
-      />
-
-      <DatabaseConfigPanel
-        open={page.configPanelOpen}
-        onOpenChange={page.setConfigPanelOpen}
-        container={page.selectedContainer}
-        onContainerUpdate={async (command) => {
-          await page.updateContainer(command);
-        }}
       />
 
       <DeleteConfirmationDialog

@@ -73,18 +73,68 @@ pub async fn get_container_status(name: &str) -> Option<String> {
         })
 }
 
-/// Waits a specified time for the container to initialize
-pub async fn wait_for_container_ready(seconds: u64) {
-    println!(
-        "⏳ Waiting {} seconds for the container to initialize...",
-        seconds
-    );
-    tokio::time::sleep(tokio::time::Duration::from_secs(seconds)).await;
+/// Gets the port mapping of a container
+pub async fn get_container_port(name: &str) -> Option<String> {
+    Command::new("docker")
+        .args(&[
+            "ps",
+            "-a",
+            "--filter",
+            &format!("name={}", name),
+            "--format",
+            "{{.Ports}}",
+        ])
+        .output()
+        .ok()
+        .and_then(|output| {
+            if output.status.success() {
+                let ports = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !ports.is_empty() {
+                    Some(ports)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
 }
 
-/// Shorter alias to wait for container
-pub async fn wait_for_container(seconds: u64) {
-    wait_for_container_ready(seconds).await;
+/// Waits for a container to be ready with retry logic
+/// Returns true if container is ready, false if timeout is reached
+pub async fn wait_for_container_ready(
+    container_name: &str,
+    max_attempts: u32,
+    delay_secs: u64,
+) -> bool {
+    println!(
+        "⏳ Waiting for container '{}' to be ready (max {} attempts, {}s delay)...",
+        container_name, max_attempts, delay_secs
+    );
+
+    for attempt in 1..=max_attempts {
+        if container_exists(container_name).await {
+            if let Some(status) = get_container_status(container_name).await {
+                if status.contains("Up") {
+                    println!(
+                        "✅ Container '{}' is ready (attempt {}/{})",
+                        container_name, attempt, max_attempts
+                    );
+                    return true;
+                }
+            }
+        }
+
+        if attempt < max_attempts {
+            tokio::time::sleep(tokio::time::Duration::from_secs(delay_secs)).await;
+        }
+    }
+
+    println!(
+        "❌ Container '{}' did not become ready after {} attempts",
+        container_name, max_attempts
+    );
+    false
 }
 
 /// Creates a Docker volume
@@ -112,4 +162,27 @@ pub async fn clean_volume(name: &str) {
         .output();
 
     println!("✅ Volume {} cleaned up", name);
+}
+
+/// Checks if a volume exists
+pub async fn volume_exists(name: &str) -> bool {
+    Command::new("docker")
+        .args(&["volume", "inspect", name])
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+/// Executes a Docker command and returns stdout on success
+pub async fn run_docker_command(args: Vec<String>) -> Result<String, String> {
+    let output = Command::new("docker")
+        .args(&args)
+        .output()
+        .map_err(|e| format!("Failed to execute Docker command: {}", e))?;
+
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
+    }
 }

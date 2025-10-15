@@ -15,11 +15,7 @@ export function useMainPage() {
   const app = useApp();
 
   // Dialog state
-  const [configPanelOpen, setConfigPanelOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedContainer, setSelectedContainer] = useState<Container | null>(
-    null,
-  );
   const [containerToDelete, setContainerToDelete] = useState<Container | null>(
     null,
   );
@@ -129,22 +125,6 @@ export function useMainPage() {
     setContainerToDelete(null);
   }, []);
 
-  /**
-   * Open configuration panel
-   */
-  const openConfigPanel = useCallback((container: Container) => {
-    setSelectedContainer(container);
-    setConfigPanelOpen(true);
-  }, []);
-
-  /**
-   * Close configuration panel
-   */
-  const closeConfigPanel = useCallback(() => {
-    setConfigPanelOpen(false);
-    setSelectedContainer(null);
-  }, []);
-
   return {
     // App state
     containers: app.containers,
@@ -156,7 +136,6 @@ export function useMainPage() {
 
     // App actions
     refreshDockerStatus: app.refreshDockerStatus,
-    updateContainer: app.updateContainer,
 
     // Window navigation
     openCreateWindow,
@@ -167,13 +146,6 @@ export function useMainPage() {
     handleDelete,
     handleConfirmDelete,
     handleCancelDelete,
-
-    // Config panel
-    configPanelOpen,
-    selectedContainer,
-    openConfigPanel,
-    closeConfigPanel,
-    setConfigPanelOpen,
 
     // Delete dialog
     deleteDialogOpen,
