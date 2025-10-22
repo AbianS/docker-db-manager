@@ -106,13 +106,6 @@ describe('DatabaseRegistry', () => {
       expect(sqlserver?.defaultPort).toBe(1433);
     });
 
-    it('should have InfluxDB provider registered', () => {
-      const influxdb = databaseRegistry.get('InfluxDB');
-      expect(influxdb).toBeDefined();
-      expect(influxdb?.name).toBe('InfluxDB');
-      expect(influxdb?.defaultPort).toBe(8086);
-    });
-
     it('should have Elasticsearch provider registered', () => {
       const elasticsearch = databaseRegistry.get('Elasticsearch');
       expect(elasticsearch).toBeDefined();
@@ -120,10 +113,10 @@ describe('DatabaseRegistry', () => {
       expect(elasticsearch?.defaultPort).toBe(9200);
     });
 
-    it('should have at least 8 real providers registered', () => {
-      // Should have at least the 8 main database providers
+    it('should have at least 7 real providers registered', () => {
+      // Should have at least the 7 main database providers
       // (May have more if mock providers were registered in other tests)
-      expect(databaseRegistry.count()).toBeGreaterThanOrEqual(8);
+      expect(databaseRegistry.count()).toBeGreaterThanOrEqual(7);
     });
 
     it('should have all expected provider IDs', () => {
@@ -134,7 +127,6 @@ describe('DatabaseRegistry', () => {
       expect(ids).toContain('MongoDB');
       expect(ids).toContain('MariaDB');
       expect(ids).toContain('SQLServer');
-      expect(ids).toContain('InfluxDB');
       expect(ids).toContain('Elasticsearch');
     });
   });
