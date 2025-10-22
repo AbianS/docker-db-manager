@@ -248,7 +248,7 @@ export class SQLServerDatabaseProvider implements DatabaseProvider {
 
     // SQL Server requires strong password
     const strongPasswordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
     if (config.password && !strongPasswordRegex.test(config.password)) {
       errors.push(
         'Password must contain uppercase, lowercase, numbers, and special characters',
