@@ -24,7 +24,15 @@ export class InfluxDBDatabaseProvider implements DatabaseProvider {
   readonly containerPort = 8086;
   readonly dataPath = '/var/lib/influxdb2';
   readonly versions = [
-    // InfluxDB 3.x (Core and Enterprise)
+    // InfluxDB 2.x (Stable - Recommended)
+    '2.7.12',
+    '2.7',
+    '2',
+    '2.7.12-alpine',
+    '2.7-alpine',
+    '2-alpine',
+    'alpine',
+    // InfluxDB 3.x (Core and Enterprise) - Manual setup required
     '3-core',
     '3.5-core',
     '3.5.0-core',
@@ -33,15 +41,7 @@ export class InfluxDBDatabaseProvider implements DatabaseProvider {
     '3.5-enterprise',
     '3.5.0-enterprise',
     'enterprise',
-    // InfluxDB 2.x (Latest)
     'latest',
-    '2',
-    '2.7',
-    '2.7.12',
-    'alpine',
-    '2-alpine',
-    '2.7-alpine',
-    '2.7.12-alpine',
     // InfluxDB 1.12
     '1.12',
     '1.12.2',
