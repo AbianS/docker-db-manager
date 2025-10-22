@@ -1,3 +1,4 @@
+import { MariaDBDatabaseProvider } from '../providers/mariadb.provider';
 import { MongoDBDatabaseProvider } from '../providers/mongodb.provider';
 import { MySQLDatabaseProvider } from '../providers/mysql.provider';
 import { PostgresDatabaseProvider } from '../providers/postgres.provider';
@@ -57,6 +58,7 @@ export function createDatabaseRegistry(): DatabaseRegistry {
   return new DatabaseRegistry([
     new PostgresDatabaseProvider(),
     new MySQLDatabaseProvider(),
+    new MariaDBDatabaseProvider(),
     new RedisDatabaseProvider(),
     new MongoDBDatabaseProvider(),
   ]);

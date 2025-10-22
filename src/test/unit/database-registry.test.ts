@@ -92,10 +92,17 @@ describe('DatabaseRegistry', () => {
       expect(mongodb?.defaultPort).toBe(27017);
     });
 
-    it('should have at least 4 real providers registered', () => {
-      // Should have at least the 4 main database providers
+    it('should have MariaDB provider registered', () => {
+      const mariadb = databaseRegistry.get('MariaDB');
+      expect(mariadb).toBeDefined();
+      expect(mariadb?.name).toBe('MariaDB');
+      expect(mariadb?.defaultPort).toBe(3306);
+    });
+
+    it('should have at least 5 real providers registered', () => {
+      // Should have at least the 5 main database providers
       // (May have more if mock providers were registered in other tests)
-      expect(databaseRegistry.count()).toBeGreaterThanOrEqual(4);
+      expect(databaseRegistry.count()).toBeGreaterThanOrEqual(5);
     });
 
     it('should have all expected provider IDs', () => {
@@ -104,6 +111,7 @@ describe('DatabaseRegistry', () => {
       expect(ids).toContain('MySQL');
       expect(ids).toContain('Redis');
       expect(ids).toContain('MongoDB');
+      expect(ids).toContain('MariaDB');
     });
   });
 });
