@@ -55,87 +55,90 @@ export function DatabaseSelectionStep({ form, isSubmitting }: Props) {
   const providers = databaseRegistry.getAll();
 
   return (
-    <motion.div
-      className="space-y-3"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      <Controller
-        name="databaseSelection.dbType"
-        control={control}
-        render={({ field: { onChange, value } }) => (
-          <motion.div className="space-y-4" variants={itemVariants}>
-            <div className="text-sm font-medium text-foreground text-center">
-              Select database type
-            </div>{' '}
-            <motion.div
-              className="grid grid-cols-2 gap-3"
-              variants={containerVariants}
-            >
-              {providers.map((provider, index) => (
-                <motion.div
-                  key={provider.id}
-                  variants={buttonVariants}
-                  initial="idle"
-                  whileHover="hover"
-                  whileTap="tap"
-                  custom={index}
-                >
-                  <motion.button
-                    type="button"
-                    className={cn(
-                      'p-4 rounded-lg border-2 transition-all duration-200 ease-out border-white/10 bg-white/10 hover:border-primary hover:shadow-lg hover:opacity-90 group w-full',
-                      {
-                        'border-primary bg-primary/20': value === provider.id,
-                      },
-                    )}
-                    onClick={() => onChange(provider.id)}
-                    disabled={isSubmitting}
-                    variants={itemVariants}
-                  >
-                    <div className="flex flex-col items-center space-y-2">
-                      <motion.div
-                        className={cn(
-                          'w-10 h-10 rounded-full flex items-center justify-center transition-transform duration-200 ease-out',
-                          'group-hover:scale-110',
-                          'group-active:scale-90',
-                        )}
-                        style={{ backgroundColor: provider.color }}
-                        animate={{
-                          rotate: value === provider.id ? [0, -5, 5, -5, 0] : 0,
-                        }}
-                        transition={{
-                          duration: 0.5,
-                          ease: 'easeInOut',
-                        }}
-                      >
-                        {provider.icon}
-                      </motion.div>
-                      <span className="font-medium text-foreground text-sm">
-                        {provider.name}
-                      </span>
-                    </div>
-                  </motion.button>
-                </motion.div>
-              ))}
-            </motion.div>
-            {/* Error message */}
-            {errors.databaseSelection?.dbType && (
+    <div className="max-h-[70vh] overflow-y-auto px-2">
+      <motion.div
+        className="space-y-3"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <Controller
+          name="databaseSelection.dbType"
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <motion.div className="space-y-4" variants={itemVariants}>
+              <div className="text-sm font-medium text-foreground text-center">
+                Select database type
+              </div>{' '}
               <motion.div
-                className="flex items-center justify-center"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
+                className="grid grid-cols-3 gap-3"
+                variants={containerVariants}
               >
-                <p className="text-xs text-destructive bg-destructive/10 px-3 py-1 rounded border border-destructive/20">
-                  {errors.databaseSelection.dbType.message}
-                </p>
+                {providers.map((provider, index) => (
+                  <motion.div
+                    key={provider.id}
+                    variants={buttonVariants}
+                    initial="idle"
+                    whileHover="hover"
+                    whileTap="tap"
+                    custom={index}
+                  >
+                    <motion.button
+                      type="button"
+                      className={cn(
+                        'p-4 rounded-lg border-2 transition-all duration-200 ease-out border-white/10 bg-white/10 hover:border-primary hover:shadow-lg hover:opacity-90 group w-full',
+                        {
+                          'border-primary bg-primary/20': value === provider.id,
+                        },
+                      )}
+                      onClick={() => onChange(provider.id)}
+                      disabled={isSubmitting}
+                      variants={itemVariants}
+                    >
+                      <div className="flex flex-col items-center space-y-2">
+                        <motion.div
+                          className={cn(
+                            'w-10 h-10 rounded-full flex items-center justify-center transition-transform duration-200 ease-out',
+                            'group-hover:scale-110',
+                            'group-active:scale-90',
+                          )}
+                          style={{ backgroundColor: provider.color }}
+                          animate={{
+                            rotate:
+                              value === provider.id ? [0, -5, 5, -5, 0] : 0,
+                          }}
+                          transition={{
+                            duration: 0.5,
+                            ease: 'easeInOut',
+                          }}
+                        >
+                          {provider.icon}
+                        </motion.div>
+                        <span className="font-medium text-foreground text-sm">
+                          {provider.name}
+                        </span>
+                      </div>
+                    </motion.button>
+                  </motion.div>
+                ))}
               </motion.div>
-            )}
-          </motion.div>
-        )}
-      />
-    </motion.div>
+              {/* Error message */}
+              {errors.databaseSelection?.dbType && (
+                <motion.div
+                  className="flex items-center justify-center"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <p className="text-xs text-destructive bg-destructive/10 px-3 py-1 rounded border border-destructive/20">
+                    {errors.databaseSelection.dbType.message}
+                  </p>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+        />
+      </motion.div>
+    </div>
   );
 }
