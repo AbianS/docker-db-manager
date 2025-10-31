@@ -1,3 +1,4 @@
+import { ElasticsearchDatabaseProvider } from '../providers/elasticsearch.provider';
 import { MariaDBDatabaseProvider } from '../providers/mariadb.provider';
 import { MongoDBDatabaseProvider } from '../providers/mongodb.provider';
 import { MySQLDatabaseProvider } from '../providers/mysql.provider';
@@ -63,6 +64,7 @@ export function createDatabaseRegistry(): DatabaseRegistry {
     new RedisDatabaseProvider(),
     new MongoDBDatabaseProvider(),
     new SQLServerDatabaseProvider(),
+    new ElasticsearchDatabaseProvider(),
   ]);
 }
 
