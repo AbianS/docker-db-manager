@@ -62,7 +62,7 @@ export function ContainerConfigurationStep({ form }: Props) {
   }
 
   return (
-    <div className="max-h-[70vh] overflow-y-auto pr-2">
+    <div className="max-h-[70vh] overflow-y-auto px-2">
       <motion.div
         className="space-y-4"
         variants={containerVariants}
@@ -86,7 +86,7 @@ export function ContainerConfigurationStep({ form }: Props) {
               <AccordionTrigger className="text-sm font-medium">
                 Basic Configuration
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-4">
+              <AccordionContent className="space-y-4 pt-4 px-1">
                 {/* Dynamic Basic Fields from Provider (includes name, port, version, etc.) */}
                 <DynamicFormSection
                   form={form}
@@ -128,7 +128,7 @@ export function ContainerConfigurationStep({ form }: Props) {
                 <AccordionTrigger className="text-sm font-medium">
                   Authentication
                 </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-4">
+                <AccordionContent className="space-y-4 pt-4 px-1">
                   <DynamicFormSection
                     form={form}
                     fields={provider.getAuthenticationFields()}
@@ -144,7 +144,7 @@ export function ContainerConfigurationStep({ form }: Props) {
                 <AccordionTrigger className="text-sm font-medium">
                   Advanced Configuration
                 </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-4">
+                <AccordionContent className="space-y-4 pt-4 px-1">
                   <DynamicFieldGroups
                     form={form}
                     groups={provider.getAdvancedFields()}

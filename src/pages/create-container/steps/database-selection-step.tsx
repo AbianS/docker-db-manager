@@ -55,24 +55,25 @@ export function DatabaseSelectionStep({ form, isSubmitting }: Props) {
   const providers = databaseRegistry.getAll();
 
   return (
-    <motion.div
-      className="space-y-3"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      <Controller
-        name="databaseSelection.dbType"
-        control={control}
-        render={({ field: { onChange, value } }) => (
-          <motion.div className="space-y-4" variants={itemVariants}>
-            <div className="text-sm font-medium text-foreground text-center">
-              Select database type
-            </div>{' '}
-            <motion.div
-              className="grid grid-cols-2 gap-3"
-              variants={containerVariants}
-            >
+    <div className="max-h-[70vh] overflow-y-auto px-2">
+      <motion.div
+        className="space-y-3"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <Controller
+          name="databaseSelection.dbType"
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <motion.div className="space-y-4" variants={itemVariants}>
+              <div className="text-sm font-medium text-foreground text-center">
+                Select database type
+              </div>{' '}
+              <motion.div
+                className="grid grid-cols-3 gap-3"
+                variants={containerVariants}
+              >
               {providers.map((provider, index) => (
                 <motion.div
                   key={provider.id}
@@ -136,6 +137,7 @@ export function DatabaseSelectionStep({ form, isSubmitting }: Props) {
           </motion.div>
         )}
       />
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }
