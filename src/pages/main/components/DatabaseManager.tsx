@@ -11,7 +11,6 @@ import {
   Trash2,
   Zap,
 } from 'lucide-react';
-import { useAppUpdater } from '@/features/app/hooks/use-app-updater';
 import logoImage from '../../../../public/logo.avif';
 import { useAppVersion } from '../../../features/app/hooks/use-app-version';
 import { Badge } from '../../../shared/components/ui/badge';
@@ -32,6 +31,10 @@ interface DatabaseManagerProps {
   onCreateContainer: () => void;
   onEditContainer: (containerId: string) => void;
   disabled?: boolean;
+  updateAvailable: boolean;
+  checkingUpdate: boolean;
+  downloadingUpdate: boolean;
+  onCheckForUpdates: () => void;
 }
 
 /**
@@ -50,9 +53,12 @@ export function DatabaseManager({
   onCreateContainer,
   onEditContainer,
   disabled = false,
+  updateAvailable,
+  checkingUpdate,
+  downloadingUpdate,
+  onCheckForUpdates,
 }: DatabaseManagerProps) {
   const { version } = useAppVersion();
-  const { checking, downloading, checkForUpdates } = useAppUpdater();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -139,23 +145,33 @@ export function DatabaseManager({
             <Plus className="w-4 h-4" />
             New Database
           </Button>
-          <Button
-            className="w-full justify-start gap-2"
-            variant="outline"
-            onClick={checkForUpdates}
-            disabled={disabled || checking || downloading}
-          >
-            {checking || downloading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4" />
+
+          <div className="relative">
+            <Button
+              className="w-full justify-start gap-2"
+              variant="outline"
+              onClick={onCheckForUpdates}
+              disabled={disabled || checkingUpdate || downloadingUpdate}
+            >
+              {checkingUpdate || downloadingUpdate ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {checkingUpdate
+                ? 'Checking...'
+                : downloadingUpdate
+                  ? 'Downloading...'
+                  : 'Check for Updates'}
+            </Button>
+
+            {updateAvailable && (
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]"></span>
+              </span>
             )}
-            {checking
-              ? 'Checking...'
-              : downloading
-                ? 'Downloading...'
-                : 'Check for Updates'}
-          </Button>
+          </div>
         </div>
 
         <div className="flex-1" />
