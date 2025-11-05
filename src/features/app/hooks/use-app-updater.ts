@@ -1,3 +1,4 @@
+import { relaunch } from '@tauri-apps/plugin-process';
 import { check } from '@tauri-apps/plugin-updater';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -11,7 +12,25 @@ export function useAppUpdater() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [updateVersion, setUpdateVersion] = useState<string>('');
 
-  const checkForUpdates = async () => {
+  /**
+   * Handles app relaunch after update installation
+   */
+  const handleRelaunch = async () => {
+    try {
+      await relaunch();
+    } catch (error) {
+      console.error('Failed to relaunch application:', error);
+      toast.error('Failed to restart application', {
+        description: 'Please restart manually',
+      });
+    }
+  };
+
+  /**
+   * Check for available updates
+   * @param silent - If true, suppresses toast notifications when no update is available
+   */
+  const checkForUpdates = async (silent = false) => {
     if (checking || downloading) return;
 
     setChecking(true);
@@ -22,22 +41,28 @@ export function useAppUpdater() {
         setUpdateAvailable(true);
         setUpdateVersion(update.version);
 
-        toast.success(`Update available: v${update.version}`, {
-          description: 'Click to download and install',
-          action: {
-            label: 'Install',
-            onClick: () => downloadAndInstall(update),
-          },
-          duration: 10000,
-        });
+        if (!silent) {
+          toast.success(`Update available: v${update.version}`, {
+            description: 'Click to download and install',
+            action: {
+              label: 'Install',
+              onClick: () => downloadAndInstall(update),
+            },
+            duration: 10000,
+          });
+        }
       } else {
-        toast.success('You are using the latest version');
+        if (!silent) {
+          toast.success('You are using the latest version');
+        }
       }
     } catch (error) {
       console.error('Failed to check for updates:', error);
-      toast.error('Failed to check for updates', {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
+      if (!silent) {
+        toast.error('Failed to check for updates', {
+          description: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
     } finally {
       setChecking(false);
     }
@@ -78,7 +103,12 @@ export function useAppUpdater() {
           case 'Finished':
             toast.success('Update installed successfully', {
               id: toastId,
-              description: 'Please restart the application to apply the update',
+              description: 'Click to restart and apply the update',
+              action: {
+                label: 'Restart Now',
+                onClick: handleRelaunch,
+              },
+              duration: 0,
             });
             break;
         }
