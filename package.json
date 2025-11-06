@@ -46,6 +46,7 @@
     "@radix-ui/react-slot": "1.2.3",
     "@radix-ui/react-switch": "1.2.6",
     "@radix-ui/react-tabs": "1.1.13",
+    "@radix-ui/react-tooltip": "^1.2.8",
     "@tailwindcss/vite": "4.1.16",
     "@tauri-apps/api": "2.9.0",
     "@tauri-apps/plugin-clipboard-manager": "2.3.2",
