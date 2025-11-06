@@ -580,16 +580,29 @@ impl DockerService {
         app: &AppHandle,
         container_id: &str,
         command: &str,
+        columns: u16,
     ) -> Result<serde_json::Value, String> {
         let shell = app.shell();
         let enriched_path = self.get_enriched_path(app).await;
 
-        // Execute: docker exec -e TERM=xterm <container_id> sh -c "<command>"
+        // Execute: docker exec -t -e TERM=xterm -e COLUMNS=<cols> <container_id> sh -c "<command>"
+        // -t allocates a pseudo-TTY, needed for proper ls formatting and interactive commands
         // TERM=xterm enables proper terminal features (clear, colors, etc.)
+        // COLUMNS=<cols> tells programs like ls how wide the terminal is (dynamic based on xterm size)
         // Using sh -c allows complex commands with pipes, &&, etc.
+        let columns_env = format!("COLUMNS={}", columns);
         let output = shell
             .command("docker")
-            .args(&["exec", "-e", "TERM=xterm", container_id, "sh", "-c", command])
+            .args(&[
+                "exec",
+                "-t",
+                "-e", "TERM=xterm",
+                "-e", &columns_env,
+                container_id,
+                "sh",
+                "-c",
+                command
+            ])
             .env("PATH", &enriched_path)
             .output()
             .await

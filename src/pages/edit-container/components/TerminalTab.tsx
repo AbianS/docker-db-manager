@@ -53,8 +53,6 @@ export function TerminalTab({ container }: TerminalTabProps) {
         brightCyan: '#29b8db',
         brightWhite: '#e5e5e5',
       },
-      rows: 24,
-      cols: 100,
       allowProposedApi: true,
       scrollback: 1000,
     });
@@ -74,7 +72,7 @@ export function TerminalTab({ container }: TerminalTabProps) {
     // Welcome message
     terminal.writeln('\x1b[1;32mDocker Container Terminal\x1b[0m');
     terminal.writeln(
-      `\x1b[90mContainer: ${container.name} (${container.containerId.slice(0, 12)})\x1b[0m`,
+      `\x1b[90mContainer: ${container.name} (${container.containerId?.slice(0, 12)})\x1b[0m`,
     );
     terminal.writeln('');
 
@@ -117,7 +115,7 @@ export function TerminalTab({ container }: TerminalTabProps) {
         terminal.clear();
         terminal.writeln('\x1b[1;32mDocker Container Terminal\x1b[0m');
         terminal.writeln(
-          `\x1b[90mContainer: ${container.name} (${container.containerId.slice(0, 12)})\x1b[0m`,
+          `\x1b[90mContainer: ${container.name} (${container.containerId?.slice(0, 12)})\x1b[0m`,
         );
         terminal.writeln('');
         currentLineRef.current = '';
@@ -162,7 +160,9 @@ export function TerminalTab({ container }: TerminalTabProps) {
     command: string,
   ) => {
     try {
-      const result = await executeCommand(command);
+      // Get current terminal columns for proper formatting
+      const columns = terminal.cols;
+      const result = await executeCommand(command, columns);
 
       // Write stdout in normal color
       if (result.stdout) {
@@ -203,12 +203,8 @@ export function TerminalTab({ container }: TerminalTabProps) {
   };
 
   return (
-    <div className="h-full flex flex-col bg-card">
-      <div
-        ref={terminalRef}
-        className="flex-1 px-4 pt-4 pb-4"
-        style={{ height: '100%', width: '100%' }}
-      />
+    <div className="h-full flex flex-col bg-card p-4">
+      <div ref={terminalRef} className="flex-1 overflow-hidden" />
       {!isReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-card">
           <div className="text-center text-muted-foreground">

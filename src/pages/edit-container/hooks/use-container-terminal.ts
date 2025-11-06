@@ -48,10 +48,11 @@ export function useContainerTerminal(containerId?: string) {
    * Calls the Tauri backend to run docker exec
    * 
    * @param command - Command string to execute
+   * @param columns - Terminal width in columns (for proper formatting)
    * @returns Command output with stdout, stderr, and exit code
    */
   const executeCommand = useCallback(
-    async (command: string): Promise<CommandOutput> => {
+    async (command: string, columns: number = 80): Promise<CommandOutput> => {
       if (!containerId) {
         throw new Error('Container ID is required');
       }
@@ -63,10 +64,11 @@ export function useContainerTerminal(containerId?: string) {
       setIsExecuting(true);
 
       try {
-        // Call Tauri backend to execute command
+        // Call Tauri backend to execute command with terminal width
         const result = await invoke<CommandOutput>('execute_container_command', {
           containerId,
           command: command.trim(),
+          columns,
         });
 
         // Add to history

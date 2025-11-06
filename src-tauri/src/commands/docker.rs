@@ -65,9 +65,11 @@ pub async fn execute_container_command(
     app: AppHandle,
     container_id: String,
     command: String,
+    columns: Option<u16>,
 ) -> Result<serde_json::Value, String> {
     let docker_service = DockerService::new();
+    let cols = columns.unwrap_or(80);
     docker_service
-        .execute_container_command(&app, &container_id, &command)
+        .execute_container_command(&app, &container_id, &command, cols)
         .await
 }
