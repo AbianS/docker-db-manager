@@ -533,4 +533,35 @@ impl DockerService {
 
         Ok(())
     }
+
+    pub async fn get_container_logs(
+        &self,
+        app: &AppHandle,
+        container_id: &str,
+        tail_lines: Option<i32>,
+    ) -> Result<String, String> {
+        let shell = app.shell();
+        let enriched_path = self.get_enriched_path(app).await;
+
+        // Default to 500 lines if not specified
+        let tail = tail_lines.unwrap_or(500).to_string();
+
+        // Execute: docker logs --tail N --timestamps CONTAINER_ID
+        let output = shell
+            .command("docker")
+            .args(&["logs", "--tail", &tail, "--timestamps", container_id])
+            .env("PATH", &enriched_path)
+            .output()
+            .await
+            .map_err(|e| format!("Failed to get container logs: {}", e))?;
+
+        if !output.status.success() {
+            let error = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("Failed to get container logs: {}", error));
+        }
+
+        // Return logs as UTF-8 string
+        let logs = String::from_utf8_lossy(&output.stdout).to_string();
+        Ok(logs)
+    }
 }

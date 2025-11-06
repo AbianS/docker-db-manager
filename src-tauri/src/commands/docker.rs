@@ -38,3 +38,15 @@ pub async fn sync_containers_with_docker(
 
     Ok(container_map.values().cloned().collect())
 }
+
+#[tauri::command]
+pub async fn get_container_logs(
+    app: AppHandle,
+    container_id: String,
+    tail_lines: Option<i32>,
+) -> Result<String, String> {
+    let docker_service = DockerService::new();
+    docker_service
+        .get_container_logs(&app, &container_id, tail_lines)
+        .await
+}

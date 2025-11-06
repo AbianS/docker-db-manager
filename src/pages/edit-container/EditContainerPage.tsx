@@ -178,9 +178,9 @@ export function EditContainerPage() {
         {/* Logs Tab */}
         <TabsContent
           value={ContainerTab.Logs}
-          className="flex-1 overflow-auto m-0 pt-0"
+          className="flex-1 overflow-hidden m-0 pt-0"
         >
-          <LogsTab />
+          <LogsTab container={container} />
         </TabsContent>
       </Tabs>
 
