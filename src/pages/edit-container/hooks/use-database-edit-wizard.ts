@@ -250,5 +250,6 @@ export function useDatabaseEditWizard(containerId: string) {
     save,
     cancel,
     closeWindow,
+    refetch: loadContainer,
   };
 }

@@ -1,16 +1,26 @@
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { Toaster } from 'sonner';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
+import { Toaster, toast } from 'sonner';
+import { invoke } from '@/core/tauri/invoke';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/shared/components/ui/tabs';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/shared/components/ui/tooltip';
-import { ConfigurationTab, useUnsavedChangesWarning } from './components/ConfigurationTab';
+import {
+  ConfigurationTab,
+  useUnsavedChangesWarning,
+} from './components/ConfigurationTab';
 import { ContainerDashboard } from './components/ContainerDashboard';
 import { ContainerHeader } from './components/ContainerHeader';
 import { LogsTab } from './components/LogsTab';
+import { TerminalTab } from './components/TerminalTab';
 import { useDatabaseEditWizard } from './hooks/use-database-edit-wizard';
 import { ContainerTab, TAB_LABELS } from './types/tabs';
 import { isTabAvailable, type TabConfig } from './utils/container-actions';
@@ -23,7 +33,7 @@ export function EditContainerPage() {
   );
 
   // Load container data and form
-  const { container, loading, saving, form, save, cancel } =
+  const { container, loading, saving, form, save, cancel, refetch } =
     useDatabaseEditWizard(containerId || '');
 
   // Unsaved changes warning
@@ -33,6 +43,68 @@ export function EditContainerPage() {
   const {
     formState: { isDirty },
   } = form;
+
+  /**
+   * Start the container
+   */
+  const handleStartContainer = async () => {
+    if (!container) return;
+
+    try {
+      await invoke('start_container', { containerId: container.id });
+      toast.success('Container started successfully');
+      refetch(); // Refresh container data
+    } catch (error) {
+      console.error('Error starting container:', error);
+      toast.error('Failed to start container');
+    }
+  };
+
+  /**
+   * Stop the container
+   */
+  const handleStopContainer = async () => {
+    if (!container) return;
+
+    try {
+      await invoke('stop_container', { containerId: container.id });
+      toast.success('Container stopped successfully');
+
+      // If current tab requires running container, switch to Dashboard
+      const currentTab = tabs.find((tab) => tab.id === activeTab);
+      if (currentTab?.requiresRunning) {
+        setActiveTab(ContainerTab.Dashboard);
+      }
+
+      refetch(); // Refresh container data
+    } catch (error) {
+      console.error('Error stopping container:', error);
+      toast.error('Failed to stop container');
+    }
+  };
+
+  /**
+   * Delete the container
+   */
+  const handleDeleteContainer = async () => {
+    if (!container) return;
+
+    const confirmed = confirm(
+      `Are you sure you want to delete "${container.name}"? This action cannot be undone.`,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await invoke('remove_container', { containerId: container.id });
+      toast.success('Container deleted successfully');
+      // Close window after deletion
+      window.close();
+    } catch (error) {
+      console.error('Error deleting container:', error);
+      toast.error('Failed to delete container');
+    }
+  };
 
   /**
    * Define available tabs with their configurations
@@ -50,6 +122,11 @@ export function EditContainerPage() {
       id: ContainerTab.Logs,
       label: TAB_LABELS[ContainerTab.Logs],
       requiresRunning: true, // Logs only available when container is running
+    },
+    {
+      id: ContainerTab.Terminal,
+      label: TAB_LABELS[ContainerTab.Terminal],
+      requiresRunning: true, // Terminal only available when container is running
     },
   ];
 
@@ -102,7 +179,12 @@ export function EditContainerPage() {
       <div className="h-6 bg-background" data-tauri-drag-region />
 
       {/* Header with toolbar */}
-      <ContainerHeader container={container} />
+      <ContainerHeader
+        container={container}
+        onStart={handleStartContainer}
+        onStop={handleStopContainer}
+        onDelete={handleDeleteContainer}
+      />
 
       {/* Tabs navigation and content */}
       <Tabs
@@ -110,10 +192,10 @@ export function EditContainerPage() {
         onValueChange={handleTabChange}
         className="flex-1 flex flex-col overflow-hidden"
       >
-        <TabsList className="w-full rounded-none border-b px-6 bg-card grid grid-cols-3">
+        <TabsList className="w-full rounded-none border-b px-6 bg-card grid grid-cols-4">
           {tabs.map((tab) => {
             const isAvailable = isTabAvailable(tab, container.status);
-            
+
             if (!isAvailable) {
               return (
                 <Tooltip key={tab.id} delayDuration={500}>
@@ -140,13 +222,9 @@ export function EditContainerPage() {
                 </Tooltip>
               );
             }
-            
+
             return (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                className="relative"
-              >
+              <TabsTrigger key={tab.id} value={tab.id} className="relative">
                 {tab.label}
               </TabsTrigger>
             );
@@ -181,6 +259,14 @@ export function EditContainerPage() {
           className="flex-1 overflow-hidden m-0 pt-0"
         >
           <LogsTab container={container} />
+        </TabsContent>
+
+        {/* Terminal Tab */}
+        <TabsContent
+          value={ContainerTab.Terminal}
+          className="flex-1 overflow-hidden m-0 pt-0"
+        >
+          <TerminalTab container={container} />
         </TabsContent>
       </Tabs>
 
