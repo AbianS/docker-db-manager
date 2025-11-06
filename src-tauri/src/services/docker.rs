@@ -564,4 +564,48 @@ impl DockerService {
         let logs = String::from_utf8_lossy(&output.stdout).to_string();
         Ok(logs)
     }
+
+    /// Execute a command inside a running container
+    /// Uses docker exec to run a single command and returns the output
+    /// 
+    /// # Arguments
+    /// * `app` - Tauri app handle for shell access
+    /// * `container_id` - Docker container ID to execute command in
+    /// * `command` - Command string to execute (will be run in sh -c)
+    /// 
+    /// # Returns
+    /// JSON object with stdout, stderr, and exit_code
+    pub async fn execute_container_command(
+        &self,
+        app: &AppHandle,
+        container_id: &str,
+        command: &str,
+    ) -> Result<serde_json::Value, String> {
+        let shell = app.shell();
+        let enriched_path = self.get_enriched_path(app).await;
+
+        // Execute: docker exec <container_id> sh -c "<command>"
+        // Using sh -c allows complex commands with pipes, &&, etc.
+        let output = shell
+            .command("docker")
+            .args(&["exec", container_id, "sh", "-c", command])
+            .env("PATH", &enriched_path)
+            .output()
+            .await
+            .map_err(|e| format!("Failed to execute command in container: {}", e))?;
+
+        // Get exit code (0 = success, non-zero = error)
+        let exit_code = output.status.code().unwrap_or(-1);
+
+        // Convert stdout and stderr to strings
+        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+        // Return structured JSON response
+        Ok(json!({
+            "stdout": stdout,
+            "stderr": stderr,
+            "exitCode": exit_code,
+        }))
+    }
 }

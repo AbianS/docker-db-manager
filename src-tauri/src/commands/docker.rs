@@ -50,3 +50,24 @@ pub async fn get_container_logs(
         .get_container_logs(&app, &container_id, tail_lines)
         .await
 }
+
+/// Execute a command inside a running Docker container
+/// 
+/// # Arguments
+/// * `app` - Tauri app handle
+/// * `container_id` - Docker container ID to execute command in
+/// * `command` - Command string to execute
+/// 
+/// # Returns
+/// JSON object with stdout, stderr, and exitCode
+#[tauri::command]
+pub async fn execute_container_command(
+    app: AppHandle,
+    container_id: String,
+    command: String,
+) -> Result<serde_json::Value, String> {
+    let docker_service = DockerService::new();
+    docker_service
+        .execute_container_command(&app, &container_id, &command)
+        .await
+}
