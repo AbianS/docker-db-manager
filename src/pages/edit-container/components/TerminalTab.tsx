@@ -29,8 +29,9 @@ export function TerminalTab({ container }: TerminalTabProps) {
     const terminal = new Terminal({
       cursorBlink: true,
       cursorStyle: 'block',
-      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-      fontSize: 13,
+      fontFamily:
+        'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+      fontSize: 12,
       theme: {
         background: 'transparent',
         foreground: 'rgba(255, 255, 255, 0.8)',
@@ -52,9 +53,10 @@ export function TerminalTab({ container }: TerminalTabProps) {
         brightCyan: '#29b8db',
         brightWhite: '#e5e5e5',
       },
-      rows: 20,
-      cols: 80,
+      rows: 24,
+      cols: 100,
       allowProposedApi: true,
+      scrollback: 1000,
     });
 
     // Initialize FitAddon
@@ -113,6 +115,12 @@ export function TerminalTab({ container }: TerminalTabProps) {
       // Ctrl+L (clear screen)
       else if (code === 12) {
         terminal.clear();
+        terminal.writeln('\x1b[1;32mDocker Container Terminal\x1b[0m');
+        terminal.writeln(
+          `\x1b[90mContainer: ${container.name} (${container.containerId.slice(0, 12)})\x1b[0m`,
+        );
+        terminal.writeln('');
+        currentLineRef.current = '';
         writePrompt(terminal);
       }
       // Regular character
@@ -183,25 +191,26 @@ export function TerminalTab({ container }: TerminalTabProps) {
       if (!result.stdout && !result.stderr && result.exitCode === 0) {
         // Command executed successfully with no output
       }
-
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       terminal.write(`\x1b[1;31mError: ${errorMessage}\x1b[0m\r\n`);
     } finally {
       writePrompt(terminal);
+      // Scroll to bottom after command execution
+      terminal.scrollToBottom();
     }
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-card">
       <div
         ref={terminalRef}
-        className="flex-1 p-4 overflow-auto"
+        className="flex-1 px-4 pt-4 pb-4"
         style={{ height: '100%', width: '100%' }}
       />
       {!isReady && (
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center bg-card">
           <div className="text-center text-muted-foreground">
             <p className="text-sm">Loading terminal...</p>
           </div>

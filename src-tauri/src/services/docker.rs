@@ -584,11 +584,12 @@ impl DockerService {
         let shell = app.shell();
         let enriched_path = self.get_enriched_path(app).await;
 
-        // Execute: docker exec <container_id> sh -c "<command>"
+        // Execute: docker exec -e TERM=xterm <container_id> sh -c "<command>"
+        // TERM=xterm enables proper terminal features (clear, colors, etc.)
         // Using sh -c allows complex commands with pipes, &&, etc.
         let output = shell
             .command("docker")
-            .args(&["exec", container_id, "sh", "-c", command])
+            .args(&["exec", "-e", "TERM=xterm", container_id, "sh", "-c", command])
             .env("PATH", &enriched_path)
             .output()
             .await
