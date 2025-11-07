@@ -1,4 +1,4 @@
-import { Activity, Clock, Copy, Database, HardDrive, Settings } from 'lucide-react';
+import { Copy, Database, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { databaseRegistry } from '@/features/databases/registry/database-registry';
 import { Badge } from '@/shared/components/ui/badge';
@@ -146,46 +146,6 @@ export function ContainerDashboard({ container }: ContainerDashboardProps) {
             </Badge>
           </div>
         </div>
-      </Card>
-
-      {/* Container Stats Section - Placeholder */}
-      <Card className="p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Activity className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold">Container Stats</h3>
-          <Badge variant="secondary" className="text-xs ml-auto">
-            Coming Soon
-          </Badge>
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          {/* CPU Placeholder */}
-          <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-muted/50 border border-border">
-            <Activity className="h-5 w-5 text-muted-foreground mb-2" />
-            <span className="text-xs text-muted-foreground">CPU</span>
-            <span className="text-sm font-medium text-muted-foreground">
-              --%
-            </span>
-          </div>
-
-          {/* Memory Placeholder */}
-          <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-muted/50 border border-border">
-            <HardDrive className="h-5 w-5 text-muted-foreground mb-2" />
-            <span className="text-xs text-muted-foreground">Memory</span>
-            <span className="text-sm font-medium text-muted-foreground">
-              -- MB
-            </span>
-          </div>
-
-          {/* Uptime Placeholder */}
-          <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-muted/50 border border-border">
-            <Clock className="h-5 w-5 text-muted-foreground mb-2" />
-            <span className="text-xs text-muted-foreground">Uptime</span>
-            <span className="text-sm font-medium text-muted-foreground">
-              --
-            </span>
-          </div>
-        </div>
-        {/* TODO: Implement real container stats in future */}
       </Card>
     </div>
   );
