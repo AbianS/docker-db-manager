@@ -51,15 +51,6 @@ pub async fn get_container_logs(
         .await
 }
 
-/// Execute a command inside a running Docker container
-/// 
-/// # Arguments
-/// * `app` - Tauri app handle
-/// * `container_id` - Docker container ID to execute command in
-/// * `command` - Command string to execute
-/// 
-/// # Returns
-/// JSON object with stdout, stderr, and exitCode
 #[tauri::command]
 pub async fn execute_container_command(
     app: AppHandle,
