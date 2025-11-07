@@ -8,16 +8,9 @@ interface ConfigurationViewProps {
   container: Container;
 }
 
-/**
- * Read-only view of container configuration
- * Displays all configuration details in a structured format
- */
 export function ConfigurationView({ container }: ConfigurationViewProps) {
   const provider = databaseRegistry.get(container.dbType);
 
-  /**
-   * Mask password for display
-   */
   const maskPassword = (password?: string) => {
     if (!password) return 'N/A';
     return '•'.repeat(8);

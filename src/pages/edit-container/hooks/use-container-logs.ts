@@ -13,10 +13,6 @@ const MAX_LOG_LINES = 5000;
  */
 const POLLING_INTERVAL = 3000;
 
-/**
- * Helper function to trim logs array to maximum limit
- * Keeps the most recent lines, discards oldest
- */
 function trimLogsToLimit(logs: string[], maxLines: number): string[] {
   if (logs.length <= maxLines) {
     return logs;
@@ -25,19 +21,6 @@ function trimLogsToLimit(logs: string[], maxLines: number): string[] {
   return logs.slice(logs.length - maxLines);
 }
 
-/**
- * Hook to fetch and poll container logs
- *
- * Features:
- * - Auto-polling every 3 seconds
- * - Automatic cleanup on unmount
- * - Maximum 5000 lines in memory (FIFO)
- * - Error handling with toast notifications
- *
- * @param containerId - Docker container ID to fetch logs from
- * @param enabled - Whether polling should be active (default: true)
- * @returns logs state, loading state, error state, and control functions
- */
 export function useContainerLogs(containerId?: string, enabled = true) {
   const [logs, setLogs] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,16 +35,11 @@ export function useContainerLogs(containerId?: string, enabled = true) {
   const lastSeenLogsRef = useRef<Set<string>>(new Set());
   const clearTimestampRef = useRef<number>(0);
 
-  /**
-   * Fetch logs from backend
-   */
   const fetchLogs = useCallback(async () => {
     if (!containerId || !enabled) {
       console.log('❌ Logs fetch skipped:', { containerId, enabled });
       return;
     }
-
-    console.log('📡 Fetching logs for container:', containerId);
 
     try {
       // Call Tauri command to get logs
@@ -69,8 +47,6 @@ export function useContainerLogs(containerId?: string, enabled = true) {
         containerId,
         tailLines: 500, // Get last 500 lines
       });
-
-      console.log('✅ Logs fetched, length:', logsString.length);
 
       if (!isMounted.current) {
         console.log('⚠️ Component unmounted, skipping update');
@@ -81,8 +57,6 @@ export function useContainerLogs(containerId?: string, enabled = true) {
       const logLines = logsString
         .split('\n')
         .filter((line) => line.trim().length > 0);
-
-      console.log('📝 Log lines processed:', logLines.length);
 
       // If clear was called, only show new logs that weren't seen before clear
       const filteredLines = logLines.filter((line) => {
@@ -95,12 +69,9 @@ export function useContainerLogs(containerId?: string, enabled = true) {
         return true;
       });
 
-      console.log('🔍 Filtered lines after clear:', filteredLines.length);
-
       // Trim to max limit
       const trimmedLogs = trimLogsToLimit(filteredLines, MAX_LOG_LINES);
 
-      console.log('💾 Setting logs state with', trimmedLogs.length, 'lines');
       setLogs(trimmedLogs);
 
       // Update last seen logs (add all current logs to the set)
@@ -108,10 +79,6 @@ export function useContainerLogs(containerId?: string, enabled = true) {
 
       setError(null);
       setLoading(false);
-      console.log(
-        '✅ State updated: loading=false, logs count=',
-        trimmedLogs.length,
-      );
     } catch (err) {
       if (!isMounted.current) return;
 
@@ -136,9 +103,6 @@ export function useContainerLogs(containerId?: string, enabled = true) {
     }
   }, [containerId, enabled, error]);
 
-  /**
-   * Start polling for logs
-   */
   const startPolling = useCallback(() => {
     if (!containerId || !enabled || isPolling) {
       return;
@@ -155,9 +119,6 @@ export function useContainerLogs(containerId?: string, enabled = true) {
     }, POLLING_INTERVAL);
   }, [containerId, enabled, isPolling, fetchLogs]);
 
-  /**
-   * Stop polling for logs
-   */
   const stopPolling = useCallback(() => {
     setIsPolling(false);
     if (intervalRef.current) {
@@ -166,10 +127,6 @@ export function useContainerLogs(containerId?: string, enabled = true) {
     }
   }, []);
 
-  /**
-   * Clear logs from display (doesn't affect Docker logs)
-   * After clear, only new logs will be shown
-   */
   const clearLogs = useCallback(() => {
     setLogs([]);
     // Mark timestamp when clear was called
@@ -182,9 +139,6 @@ export function useContainerLogs(containerId?: string, enabled = true) {
     );
   }, []);
 
-  /**
-   * Start polling on mount if enabled
-   */
   useEffect(() => {
     isMounted.current = true;
 

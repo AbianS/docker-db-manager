@@ -8,10 +8,6 @@ interface TerminalTabProps {
   container: Container;
 }
 
-/**
- * Terminal tab component with xterm.js
- * Allows executing commands directly in the container
- */
 export function TerminalTab({ container }: TerminalTabProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);

@@ -12,16 +12,9 @@ interface ContainerDashboardProps {
   container: Container;
 }
 
-/**
- * Dashboard view for container detail
- * Displays overview information, connection string, settings, and stats placeholders
- */
 export function ContainerDashboard({ container }: ContainerDashboardProps) {
   const provider = databaseRegistry.get(container.dbType);
 
-  /**
-   * Copy connection string to clipboard
-   */
   const handleCopyConnectionString = async () => {
     if (!provider) return;
 
@@ -36,9 +29,6 @@ export function ContainerDashboard({ container }: ContainerDashboardProps) {
     }
   };
 
-  /**
-   * Format date for display
-   */
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',

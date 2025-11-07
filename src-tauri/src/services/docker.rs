@@ -565,16 +565,6 @@ impl DockerService {
         Ok(logs)
     }
 
-    /// Execute a command inside a running container
-    /// Uses docker exec to run a single command and returns the output
-    /// 
-    /// # Arguments
-    /// * `app` - Tauri app handle for shell access
-    /// * `container_id` - Docker container ID to execute command in
-    /// * `command` - Command string to execute (will be run in sh -c)
-    /// 
-    /// # Returns
-    /// JSON object with stdout, stderr, and exit_code
     pub async fn execute_container_command(
         &self,
         app: &AppHandle,
@@ -596,12 +586,14 @@ impl DockerService {
             .args(&[
                 "exec",
                 "-t",
-                "-e", "TERM=xterm",
-                "-e", &columns_env,
+                "-e",
+                "TERM=xterm",
+                "-e",
+                &columns_env,
                 container_id,
                 "sh",
                 "-c",
-                command
+                command,
             ])
             .env("PATH", &enriched_path)
             .output()

@@ -26,16 +26,7 @@ interface EditContainerFormProps {
   form: UseFormReturn<any>;
 }
 
-/**
- * Pure form component for editing container configuration
- * Renders the form fields without handling submission logic
- * Submit handling is managed by parent component (ConfigurationTab)
- */
-export function EditContainerForm({
-  provider,
-  form,
-}: EditContainerFormProps) {
-
+export function EditContainerForm({ provider, form }: EditContainerFormProps) {
   return (
     <Form {...form}>
       <div className="space-y-4">

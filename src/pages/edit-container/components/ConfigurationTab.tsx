@@ -22,10 +22,6 @@ interface ConfigurationTabProps {
   onCancel: () => void;
 }
 
-/**
- * Configuration tab component
- * Always shows editable form with save/cancel buttons
- */
 export function ConfigurationTab({
   container,
   form,
@@ -40,18 +36,12 @@ export function ConfigurationTab({
     formState: { isDirty },
   } = form;
 
-  /**
-   * Save changes
-   */
   const handleSave = async () => {
     await handleSubmit(async (data) => {
       await onSave(data);
     })();
   };
 
-  /**
-   * Cancel changes and revert
-   */
   const handleCancel = () => {
     onCancel();
   };
@@ -112,20 +102,10 @@ export function ConfigurationTab({
   );
 }
 
-/**
- * Hook to handle unsaved changes warning
- * Returns true if user wants to proceed despite unsaved changes
- */
 export function useUnsavedChangesWarning() {
   const [showDialog, setShowDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
-  /**
-   * Check if there are unsaved changes and show dialog if needed
-   * @param hasUnsavedChanges - Whether there are unsaved changes
-   * @param action - Action to perform if user confirms
-   * @returns true if no unsaved changes or user confirmed, false otherwise
-   */
   const checkUnsavedChanges = (
     hasUnsavedChanges: boolean,
     action: () => void,
@@ -140,9 +120,6 @@ export function useUnsavedChangesWarning() {
     return false;
   };
 
-  /**
-   * Handle discard changes - proceed with pending action
-   */
   const handleDiscard = () => {
     if (pendingAction) {
       pendingAction();
@@ -151,17 +128,11 @@ export function useUnsavedChangesWarning() {
     setPendingAction(null);
   };
 
-  /**
-   * Handle cancel - stay on current tab
-   */
   const handleCancel = () => {
     setShowDialog(false);
     setPendingAction(null);
   };
 
-  /**
-   * Dialog component to show unsaved changes warning
-   */
   const UnsavedChangesDialog = () => (
     <Dialog open={showDialog} onOpenChange={setShowDialog}>
       <DialogContent>

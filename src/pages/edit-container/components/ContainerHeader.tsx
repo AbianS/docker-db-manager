@@ -15,19 +15,12 @@ interface ContainerHeaderProps {
   onDelete: () => void;
 }
 
-/**
- * Header component for container detail view
- * Displays container name, type, status, and toolbar with global actions
- */
 export function ContainerHeader({
   container,
   onStart,
   onStop,
   onDelete,
 }: ContainerHeaderProps) {
-  /**
-   * Get visual styling for status badge based on container status
-   */
   const getStatusVariant = (
     status: string,
   ): 'default' | 'secondary' | 'destructive' => {

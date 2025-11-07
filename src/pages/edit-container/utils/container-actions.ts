@@ -1,9 +1,5 @@
 import type { ContainerStatus } from '@/shared/types/container';
 
-/**
- * Configuration for a container action in the toolbar
- * Defines the behavior and availability of actions based on container state
- */
 export interface ActionConfig {
   id: string;
   label: string;
@@ -13,10 +9,6 @@ export interface ActionConfig {
   onClick: () => void;
 }
 
-/**
- * Configuration for a tab in the container detail view
- * Defines which tabs are available based on container state
- */
 export interface TabConfig {
   id: string;
   label: string;
@@ -24,13 +16,6 @@ export interface TabConfig {
   requiresStopped?: boolean; // If true, only available when container is stopped
 }
 
-/**
- * Determines if an action is available based on container status
- * 
- * @param action - Action configuration to check
- * @param containerStatus - Current status of the container
- * @returns true if action is available, false otherwise
- */
 export function isActionAvailable(
   action: ActionConfig,
   containerStatus: ContainerStatus,
@@ -51,13 +36,6 @@ export function isActionAvailable(
   return true;
 }
 
-/**
- * Determines if a tab is available based on container status
- * 
- * @param tab - Tab configuration to check
- * @param containerStatus - Current status of the container
- * @returns true if tab is available, false otherwise
- */
 export function isTabAvailable(
   tab: TabConfig,
   containerStatus: ContainerStatus,
