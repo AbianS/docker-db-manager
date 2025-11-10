@@ -13,9 +13,7 @@ export function TerminalTab({ container }: TerminalTabProps) {
   const xtermRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const currentLineRef = useRef<string>('');
-  const { executeCommand, isExecuting } = useContainerTerminal(
-    container.containerId,
-  );
+  const { executeCommand } = useContainerTerminal(container.containerId);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
