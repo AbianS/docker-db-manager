@@ -107,7 +107,7 @@ export function EditContainerPage() {
       await invoke('remove_container', { containerId: container.id });
       toast.success('Container deleted successfully');
       setDeleteDialogOpen(false);
-      
+
       // Close window after deletion
       const currentWindow = getCurrentWindow();
       await currentWindow.close();
