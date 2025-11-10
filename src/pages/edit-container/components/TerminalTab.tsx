@@ -66,7 +66,7 @@ export function TerminalTab({ container }: TerminalTabProps) {
     // Welcome message
     terminal.writeln('\x1b[1;32mDocker Container Terminal\x1b[0m');
     terminal.writeln(
-      `\x1b[90mContainer: ${container.name} (${container.containerId?.slice(0, 12)})\x1b[0m`,
+      `\x1b[90mContainer: ${container.name} (${container.containerId?.slice(0, 12) ?? 'N/A'})\x1b[0m`,
     );
     terminal.writeln('');
 
@@ -109,7 +109,7 @@ export function TerminalTab({ container }: TerminalTabProps) {
         terminal.clear();
         terminal.writeln('\x1b[1;32mDocker Container Terminal\x1b[0m');
         terminal.writeln(
-          `\x1b[90mContainer: ${container.name} (${container.containerId?.slice(0, 12)})\x1b[0m`,
+          `\x1b[90mContainer: ${container.name} (${container.containerId?.slice(0, 12) ?? 'N/A'})\x1b[0m`,
         );
         terminal.writeln('');
         currentLineRef.current = '';

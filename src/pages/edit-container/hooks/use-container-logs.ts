@@ -149,21 +149,10 @@ export function useContainerLogs(containerId?: string, enabled = true) {
 
   const clearLogs = useCallback(() => {
     setLogs([]);
-    // Mark timestamp when clear was called
+    lastSeenLogsRef.current.clear();
+    seenQueueRef.current = [];
     clearTimestampRef.current = Date.now();
-    // Keep track of all logs seen up to this point
-    console.log(
-      '🗑️ Logs cleared, tracking',
-      lastSeenLogsRef.current.size,
-      'old logs',
-    );
-    // Optionally: prune seen history aggressively on clear
-    if (seenQueueRef.current.length > MAX_SEEN_LOG_LINES) {
-      while (seenQueueRef.current.length > MAX_SEEN_LOG_LINES) {
-        const oldest = seenQueueRef.current.shift();
-        if (oldest) lastSeenLogsRef.current.delete(oldest);
-      }
-    }
+    console.log('🗑️ Logs cleared and history reset');
   }, []);
 
   useEffect(() => {
