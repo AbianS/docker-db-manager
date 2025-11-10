@@ -1,7 +1,9 @@
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Toaster, toast } from 'sonner';
 import { invoke } from '@/core/tauri/invoke';
+import { DeleteConfirmationDialog } from '@/shared/components/DeleteConfirmationDialog';
 import {
   Tabs,
   TabsContent,
@@ -31,6 +33,10 @@ export function EditContainerPage() {
   const [activeTab, setActiveTab] = useState<ContainerTab>(
     ContainerTab.Dashboard,
   );
+
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Load container data and form
   const { container, loading, saving, form, save, cancel, refetch } =
@@ -84,26 +90,39 @@ export function EditContainerPage() {
   };
 
   /**
-   * Delete the container
+   * Open delete confirmation dialog
    */
-  const handleDeleteContainer = async () => {
+  const handleDeleteContainer = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  /**
+   * Confirm container deletion
+   */
+  const handleConfirmDelete = async () => {
     if (!container) return;
 
-    const confirmed = confirm(
-      `Are you sure you want to delete "${container.name}"? This action cannot be undone.`,
-    );
-
-    if (!confirmed) return;
-
+    setDeleting(true);
     try {
       await invoke('remove_container', { containerId: container.id });
       toast.success('Container deleted successfully');
+      setDeleteDialogOpen(false);
+      
       // Close window after deletion
-      window.close();
+      const currentWindow = getCurrentWindow();
+      await currentWindow.close();
     } catch (error) {
       console.error('Error deleting container:', error);
       toast.error('Failed to delete container');
+      setDeleting(false);
     }
+  };
+
+  /**
+   * Cancel container deletion
+   */
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
   };
 
   /**
@@ -272,6 +291,15 @@ export function EditContainerPage() {
 
       {/* Unsaved changes dialog */}
       <UnsavedChangesDialog />
+
+      {/* Delete confirmation dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        container={container}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        loading={deleting}
+      />
 
       <Toaster
         position="bottom-right"
