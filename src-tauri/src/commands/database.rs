@@ -157,6 +157,9 @@ pub async fn update_container_from_docker_args(
 
     // Capture previous name for later cleanup
     let previous_name = container.name.clone();
+    
+    // Capture original status to preserve it after recreation
+    let original_status = container.status.clone();
 
     // Determine if we need to recreate the container
     let name_changed = request.name != container.name;
@@ -292,10 +295,17 @@ pub async fn update_container_from_docker_args(
         container.name = request.name.clone();
         container.port = request.metadata.port;
         container.version = request.metadata.version;
-        container.container_id = Some(real_container_id);
-        container.status = "running".to_string();
+        container.container_id = Some(real_container_id.clone());
         container.stored_persist_data = request.metadata.persist_data;
         container.stored_enable_auth = request.metadata.enable_auth;
+        
+        // If the original container was stopped, stop the new one too
+        if original_status != "running" {
+            docker_service.stop_container(&app, &real_container_id).await?;
+            container.status = original_status;
+        } else {
+            container.status = "running".to_string();
+        }
 
         // Only update password if a non-empty value is provided
         if !request.metadata.password.is_empty() {
