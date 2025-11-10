@@ -25,6 +25,8 @@ pub fn run() {
             remove_container,
             get_docker_status,
             sync_containers_with_docker,
+            get_container_logs,
+            execute_container_command,
             open_container_creation_window,
             open_container_edit_window
         ])

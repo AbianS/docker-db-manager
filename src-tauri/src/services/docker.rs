@@ -533,4 +533,85 @@ impl DockerService {
 
         Ok(())
     }
+
+    pub async fn get_container_logs(
+        &self,
+        app: &AppHandle,
+        container_id: &str,
+        tail_lines: Option<i32>,
+    ) -> Result<String, String> {
+        let shell = app.shell();
+        let enriched_path = self.get_enriched_path(app).await;
+
+        // Default to 500 lines if not specified
+        let tail = tail_lines.unwrap_or(500).to_string();
+
+        // Execute: docker logs --tail N --timestamps CONTAINER_ID
+        let output = shell
+            .command("docker")
+            .args(&["logs", "--tail", &tail, "--timestamps", container_id])
+            .env("PATH", &enriched_path)
+            .output()
+            .await
+            .map_err(|e| format!("Failed to get container logs: {}", e))?;
+
+        if !output.status.success() {
+            let error = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("Failed to get container logs: {}", error));
+        }
+
+        // Return logs as UTF-8 string
+        let logs = String::from_utf8_lossy(&output.stdout).to_string();
+        Ok(logs)
+    }
+
+    pub async fn execute_container_command(
+        &self,
+        app: &AppHandle,
+        container_id: &str,
+        command: &str,
+        columns: u16,
+    ) -> Result<serde_json::Value, String> {
+        let shell = app.shell();
+        let enriched_path = self.get_enriched_path(app).await;
+
+        // Execute: docker exec -t -e TERM=xterm -e COLUMNS=<cols> <container_id> sh -c "<command>"
+        // -t allocates a pseudo-TTY, needed for proper ls formatting and interactive commands
+        // TERM=xterm enables proper terminal features (clear, colors, etc.)
+        // COLUMNS=<cols> tells programs like ls how wide the terminal is (dynamic based on xterm size)
+        // Using sh -c allows complex commands with pipes, &&, etc.
+        let columns_env = format!("COLUMNS={}", columns);
+        let output = shell
+            .command("docker")
+            .args(&[
+                "exec",
+                "-t",
+                "-e",
+                "TERM=xterm",
+                "-e",
+                &columns_env,
+                container_id,
+                "sh",
+                "-c",
+                command,
+            ])
+            .env("PATH", &enriched_path)
+            .output()
+            .await
+            .map_err(|e| format!("Failed to execute command in container: {}", e))?;
+
+        // Get exit code (0 = success, non-zero = error)
+        let exit_code = output.status.code().unwrap_or(-1);
+
+        // Convert stdout and stderr to strings
+        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+        // Return structured JSON response
+        Ok(json!({
+            "stdout": stdout,
+            "stderr": stderr,
+            "exitCode": exit_code,
+        }))
+    }
 }

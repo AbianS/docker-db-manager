@@ -86,9 +86,31 @@ export function useDatabaseEditWizard(containerId: string) {
   }, [loadContainer]);
 
   /**
-   * Cancel and close window
+   * Cancel changes and reset form
    */
-  const cancel = useCallback(async () => {
+  const cancel = useCallback(() => {
+    // Reset form to original values
+    if (container) {
+      form.reset({
+        containerConfiguration: {
+          name: container.name,
+          port: container.port,
+          version: container.version,
+          persistData: container.persistData,
+          enableAuth: container.enableAuth,
+          username: container.username,
+          password: container.password,
+          databaseName: container.databaseName,
+          maxConnections: container.maxConnections,
+        },
+      });
+    }
+  }, [container, form]);
+
+  /**
+   * Close window
+   */
+  const closeWindow = useCallback(async () => {
     try {
       const currentWindow = getCurrentWindow();
       await currentWindow.close();
@@ -145,7 +167,7 @@ export function useDatabaseEditWizard(containerId: string) {
   );
 
   /**
-   * Save changes and close window
+   * Save changes
    */
   const save = useCallback(
     async (data: EditDatabaseFormData) => {
@@ -184,6 +206,24 @@ export function useDatabaseEditWizard(containerId: string) {
           dockerRequest,
         );
 
+        // Update local container state
+        setContainer(updatedContainer);
+
+        // Reset form with new values to clear dirty state
+        form.reset({
+          containerConfiguration: {
+            name: updatedContainer.name,
+            port: updatedContainer.port,
+            version: updatedContainer.version,
+            persistData: updatedContainer.persistData,
+            enableAuth: updatedContainer.enableAuth,
+            username: updatedContainer.username,
+            password: updatedContainer.password,
+            databaseName: updatedContainer.databaseName,
+            maxConnections: updatedContainer.maxConnections,
+          },
+        });
+
         // Emit event to notify main window
         try {
           await emit('container-updated', { container: updatedContainer });
@@ -191,9 +231,7 @@ export function useDatabaseEditWizard(containerId: string) {
           console.warn('Error emitting event:', eventError);
         }
 
-        // Close window
-        const currentWindow = getCurrentWindow();
-        await currentWindow.close();
+        console.log('✅ Container updated successfully');
       } catch (error) {
         console.error('Error updating container:', error);
         throw error;
@@ -201,7 +239,7 @@ export function useDatabaseEditWizard(containerId: string) {
         setSaving(false);
       }
     },
-    [container, transformFormToDockerRequest],
+    [container, transformFormToDockerRequest, form],
   );
 
   return {
@@ -211,5 +249,7 @@ export function useDatabaseEditWizard(containerId: string) {
     form,
     save,
     cancel,
+    closeWindow,
+    refetch: loadContainer,
   };
 }
