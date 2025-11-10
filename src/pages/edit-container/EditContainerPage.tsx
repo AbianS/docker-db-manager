@@ -140,7 +140,7 @@ export function EditContainerPage() {
     if (activeTab === ContainerTab.Configuration && isDirty) {
       checkUnsavedChanges(isDirty, () => {
         setActiveTab(newTab);
-        form.reset(); // Reset form to discard changes
+        cancel(); // Reset form to discard changes using last loaded container state
       });
     } else {
       setActiveTab(newTab);

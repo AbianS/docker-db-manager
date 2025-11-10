@@ -1,9 +1,10 @@
+import type { ComponentType } from 'react';
 import type { ContainerStatus } from '@/shared/types/container';
 
 export interface ActionConfig {
   id: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   requiresRunning?: boolean; // If true, only available when container is running
   requiresStopped?: boolean; // If true, only available when container is stopped
   onClick: () => void;

@@ -9,6 +9,12 @@ import { invoke } from '@/core/tauri/invoke';
 const MAX_LOG_LINES = 5000;
 
 /**
+ * Maximum number of seen log lines to track
+ * Prevents unbounded memory growth
+ */
+const MAX_SEEN_LOG_LINES = 10000;
+
+/**
  * Polling interval in milliseconds (3 seconds)
  */
 const POLLING_INTERVAL = 3000;
@@ -23,7 +29,7 @@ function trimLogsToLimit(logs: string[], maxLines: number): string[] {
 
 export function useContainerLogs(containerId?: string, enabled = true) {
   const [logs, setLogs] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPolling, setIsPolling] = useState(false);
 
@@ -33,13 +39,17 @@ export function useContainerLogs(containerId?: string, enabled = true) {
 
   // Track last seen logs to filter old ones after clear
   const lastSeenLogsRef = useRef<Set<string>>(new Set());
+  const seenQueueRef = useRef<string[]>([]);
   const clearTimestampRef = useRef<number>(0);
 
   const fetchLogs = useCallback(async () => {
     if (!containerId || !enabled) {
       console.log('❌ Logs fetch skipped:', { containerId, enabled });
+      setLoading(false);
       return;
     }
+
+    setLoading(true);
 
     try {
       // Call Tauri command to get logs
@@ -74,8 +84,17 @@ export function useContainerLogs(containerId?: string, enabled = true) {
 
       setLogs(trimmedLogs);
 
-      // Update last seen logs (add all current logs to the set)
-      logLines.map((line) => lastSeenLogsRef.current.add(line));
+      // Update last seen logs with cap
+      logLines.forEach((line) => {
+        if (!lastSeenLogsRef.current.has(line)) {
+          lastSeenLogsRef.current.add(line);
+          seenQueueRef.current.push(line);
+          if (seenQueueRef.current.length > MAX_SEEN_LOG_LINES) {
+            const oldest = seenQueueRef.current.shift();
+            if (oldest) lastSeenLogsRef.current.delete(oldest);
+          }
+        }
+      });
 
       setError(null);
       setLoading(false);
@@ -109,6 +128,7 @@ export function useContainerLogs(containerId?: string, enabled = true) {
     }
 
     setIsPolling(true);
+    setLoading(true);
 
     // Fetch immediately
     fetchLogs();
@@ -137,6 +157,13 @@ export function useContainerLogs(containerId?: string, enabled = true) {
       lastSeenLogsRef.current.size,
       'old logs',
     );
+    // Optionally: prune seen history aggressively on clear
+    if (seenQueueRef.current.length > MAX_SEEN_LOG_LINES) {
+      while (seenQueueRef.current.length > MAX_SEEN_LOG_LINES) {
+        const oldest = seenQueueRef.current.shift();
+        if (oldest) lastSeenLogsRef.current.delete(oldest);
+      }
+    }
   }, []);
 
   useEffect(() => {

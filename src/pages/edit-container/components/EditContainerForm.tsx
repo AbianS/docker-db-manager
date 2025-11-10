@@ -26,7 +26,17 @@ interface EditContainerFormProps {
   form: UseFormReturn<any>;
 }
 
-export function EditContainerForm({ provider, form }: EditContainerFormProps) {
+export function EditContainerForm({
+  container,
+  provider,
+  form,
+}: EditContainerFormProps) {
+  const fieldOptions = {
+    isEditMode: true,
+    container,
+  };
+  const advancedFields = provider.getAdvancedFields(fieldOptions);
+
   return (
     <Form {...form}>
       <div className="space-y-4">
@@ -44,9 +54,7 @@ export function EditContainerForm({ provider, form }: EditContainerFormProps) {
               {/* Dynamic Basic Fields from Provider (includes name, port, version, etc.) */}
               <DynamicFormSection
                 form={form}
-                fields={provider.getBasicFields({
-                  isEditMode: true,
-                })}
+                fields={provider.getBasicFields(fieldOptions)}
                 fieldPrefix="containerConfiguration."
               />
 
@@ -87,7 +95,7 @@ export function EditContainerForm({ provider, form }: EditContainerFormProps) {
               <AccordionContent className="space-y-4 pt-4">
                 <DynamicFormSection
                   form={form}
-                  fields={provider.getAuthenticationFields()}
+                  fields={provider.getAuthenticationFields(fieldOptions)}
                   fieldPrefix="containerConfiguration."
                 />
               </AccordionContent>
@@ -95,16 +103,13 @@ export function EditContainerForm({ provider, form }: EditContainerFormProps) {
           )}
 
           {/* Section 3: Advanced Configuration (Dynamic from Provider) */}
-          {provider.getAdvancedFields().length > 0 && (
+          {!!advancedFields.length && (
             <AccordionItem value="advanced">
               <AccordionTrigger className="text-sm font-medium">
                 Advanced Configuration
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-4">
-                <DynamicFieldGroups
-                  form={form}
-                  groups={provider.getAdvancedFields()}
-                />
+                <DynamicFieldGroups form={form} groups={advancedFields} />
               </AccordionContent>
             </AccordionItem>
           )}
