@@ -14,7 +14,9 @@
       {
         "title": "docker-db-manager",
         "width": 800,
+        "minWidth": 800,
         "height": 500,
+        "minHeight": 500,
         "center": true,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true
