@@ -18,10 +18,10 @@ name = "docker_db_manager_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.5.1", features = [] }
+tauri-build = { version = "2.5.2", features = [] }
 
 [dependencies]
-tauri = { version = "2.9.2", features = [] }
+tauri = { version = "2.9.3", features = [] }
 tauri-plugin-opener = "2.5.2"
 tauri-plugin-shell = "2.3.3"
 tauri-plugin-store = "2.4.1"
